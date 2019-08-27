@@ -1,5 +1,6 @@
 #public libraries
 import numpy as np
+import matplotlib.pyplot as plt
 
 #our libraries
 from components.cell import Cell
@@ -125,7 +126,6 @@ class Simulator():
         self.state.extend(congestion_state)
         return self.state
 
-
     # runs simulation based on current parameters
     def run(self, u=None):
         if bool(u):
@@ -139,6 +139,8 @@ class Simulator():
             print("ERROR: no input matrix provided or stored")
             return 0
 
+        results = []
+        results.append(self.state)
         for t in range(0, len(self.u[0])):
             # each time step of the simulation is run in two stages
             # first, cycle through each cell and calculate densities for next time step
@@ -150,4 +152,25 @@ class Simulator():
             self.update_state()
             # this is done so that all the calculations are guaranteed to happen at the same time step
             # i.e. a cell's new value doesn't accidentally get factored into another cell's calculations
-            print(self.state)
+
+            # Save state
+            results.append(self.state)
+
+        results = np.matrix(results)
+        print(results)
+        self.plot_results(results)
+        return results
+
+    def plot_results(self, results):
+        fig, ax = plt.subplots()
+        cax = ax.matshow(np.flipud(results[:, self.num_cells:2*self.num_cells].transpose()), aspect="auto")
+        fig.colorbar(cax)
+        plt.xlabel("Time Step")
+        plt.ylabel("Cell")
+
+        cell_ticks = ['']
+        [cell_ticks.append(str(self.num_cells - i)) for i in range(0, self.num_cells)]
+        ax.set_yticklabels(cell_ticks)
+        ax.tick_params(axis='x', bottom=True, top=False, labelbottom=True, labeltop=False)
+
+        plt.show()
