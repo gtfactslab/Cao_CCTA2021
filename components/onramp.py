@@ -21,9 +21,10 @@ class OnRamp(Road):
 
     # other methods
 
-    # given input # of vehicles, update current density and return number of vehicles exiting the onramp
+    # given input # of vehicles, calculate next time step's density and return number of vehicles exiting the onramp
     def calculate_next_step(self, incoming_vehicles):
         if self.get_max_flow_rate() == 0:
+            self.density_next_step = 0
             return 0
 
         cur_density = self.get_current_density()
@@ -42,4 +43,8 @@ class OnRamp(Road):
         return exiting_vehicles
 
     def update(self):
+        if self.density_next_step is None:
+            print("ERROR: next step density for onramp not calculated")
+            return
         self.set_current_density(self.density_next_step)
+        self.density_next_step = None

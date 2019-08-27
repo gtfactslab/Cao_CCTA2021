@@ -24,7 +24,7 @@ class Cell(Road):
         self.upstream = None # if none, no incoming cars, just input from onramp
         self.downstream = None # if none, assumed next cell has infinite supply
 
-        self.density_next_step = 0
+        self.density_next_step = None
 
     # gets
     def get_attached_onramp(self):
@@ -42,11 +42,16 @@ class Cell(Road):
         new_density = cur_density + new_vehicles
 
         # TODO: update with proper equation
-
+        self.density_next_step = new_density
         return new_density
 
-    def update(self, incoming_to_onramp):
+    def update(self):
+        if self.density_next_step is None:
+            print("ERROR: next step density for cell not calculated")
+            return
+        self.attached_onramp.update()
         self.set_current_density(self.density_next_step)
+        self.density_next_step = None
 
     # TODO: is input density really just the current density?
     def supply(self):

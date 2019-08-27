@@ -124,7 +124,7 @@ class Simulator():
     def run(self, u=None):
         if bool(u):
             if u.shape[0] != self.n:
-                print("ERROR: input_matrix must have one row of values per cell (if no on")
+                print("ERROR: input_matrix must have one row of values per cell")
                 return 0
             else:
                 self.u = u
@@ -134,7 +134,14 @@ class Simulator():
             return 0
 
         for t in range(0, len(self.u[0])):
+            # each time step of the simulation is run in two stages
+            # first, cycle through each cell and calculate densities for next time step
             for c in self.cell_dict:
-                self.cell_dict[c].update(self.u[c - 1][t])
+                self.cell_dict[c].calculate_next_step(self.u[c - 1][t])
+            # then, update densities for each cell
+            for c in self.cell_dict:
+                self.cell_dict[c].update()
             self.update_state()
+            # this is done so that all the calculations are guaranteed to happen at the same time step
+            # i.e. a cell's new value doesn't accidentally get factored into another cell's calculations
             print(self.state)
