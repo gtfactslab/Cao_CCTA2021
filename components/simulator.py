@@ -12,7 +12,7 @@ class Simulator():
                  total_time,
                  time_step,
                  n,
-                 capacity_list,
+                 jam_density_list,
                  w_list,
                  x_jam_list,
                  v_list,
@@ -27,8 +27,8 @@ class Simulator():
         inputs_provided = isinstance(input_array, np.ndarray)
 
         error = False
-        if len(capacity_list) != n:
-            print("ERROR: capacity_list must have one value per cell")
+        if len(jam_density_list) != n:
+            print("ERROR: jam_density_list must have one value per cell")
             error = True
         if len(w_list) != n:
             print("ERROR: w_list must have one value per cell")
@@ -69,10 +69,10 @@ class Simulator():
             # we'll force cells to index by 1 to match existing convention
             self.cell_dict[i + 1] = Cell(
                 starting_density=start_list[i] if starts_provided else 0,
-                jam_density=capacity_list[i],
+                jam_density=jam_density_list[i],
                 w=w_list[i],
                 x_jam=x_jam_list[i],
-                v=v_list,
+                v=v_list[i],
                 attached_onramp=OnRamp(
                     starting_density=onramp_start_list[i] if onramp_starts_provided else 0,
                     max_flow_rate=onramp_flow_list[i] # if no onramp attached, set to 0 for equivalent behavior
@@ -97,11 +97,17 @@ class Simulator():
         if inputs_provided:
             self.u = input_array
 
-
-
     # returns dict representation of simulation setup
     def to_dict(self):
-        return
+        output_dict = {
+            "num_cells": self.num_cells,
+            "total_time": self.total_time,
+            "time_step": self. time_step,
+            "cells":{}
+        }
+        for c in self.cell_dict:
+            output_dict["cells"][c] = self.cell_dict[c].to_dict()
+        return output_dict
 
     # updates current state vector with values from cells/onramps
     def update_state(self):

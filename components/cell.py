@@ -36,18 +36,26 @@ class Cell(Road):
 
     # other methods
     def calculate_next_step(self, incoming_to_onramp):
+
         cur_density = self.get_current_density()
 
-        new_vehicles = self.attached_onramp.calculate_next_step(incoming_to_onramp)
-        new_density = cur_density + new_vehicles
+        new_from_onramp = self.attached_onramp.calculate_next_step(incoming_to_onramp)
 
         # TODO: update with proper equation
-        self.density_next_step = new_density
-        return new_density
+        upstream_demand = self.upstream.demand() if self.upstream is not None else 0
+        downstream_supply = self.downstream.supply() if self.downstream is not None else self.demand()
+
+        if self.is_congested():
+            change_in_density = self.supply() - downstream_supply
+        else:
+            change_in_density = upstream_demand - self.demand()
+
+        self.density_next_step = max(cur_density + change_in_density + new_from_onramp, 0) # ensures never goes below 0
+        return self.density_next_step
 
     def update(self):
         if self.density_next_step is None:
-            print("ERROR: next step density for cell not calculated")
+            print("ERROR: next step density for cell not calculated, run calculate_next_step() first")
             return
         self.attached_onramp.update()
         self.set_current_density(self.density_next_step)
@@ -63,3 +71,15 @@ class Cell(Road):
     # TODO: determines whether cell is congested based on current state
     def is_congested(self):
         return self.get_current_density() >= self.jam_density
+
+    #helper functions
+    def to_dict(self):
+        output_dict = {
+            "jam_density": self.jam_density,
+            "supply_w": self.supply_slope,
+            "supply_jam": self.supply_jam,
+            "demand_v": self.demand_slope
+        }
+        if self.attached_onramp.get_max_flow_rate() > 0:
+            output_dict["attached_onramp"] = self.attached_onramp.to_dict()
+        return output_dict
