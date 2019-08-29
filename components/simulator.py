@@ -13,7 +13,9 @@ class Simulator():
                  total_time,
                  time_step,
                  n,
-                 jam_density_list,
+                 h,
+                 x_upper_list,
+                 x_lower_list,
                  w_list,
                  x_jam_list,
                  v_list,
@@ -28,8 +30,11 @@ class Simulator():
         inputs_provided = isinstance(input_array, np.ndarray)
 
         error = False
-        if len(jam_density_list) != n:
-            print("ERROR: jam_density_list must have one value per cell")
+        if len(x_upper_list) != n:
+            print("ERROR: x_upper_list must have one value per cell")
+            error = True
+        if len(x_lower_list) != n:
+            print("ERROR: x_lower_list must have one value per cell")
             error = True
         if len(w_list) != n:
             print("ERROR: w_list must have one value per cell")
@@ -64,13 +69,15 @@ class Simulator():
         # cells
         self.num_cells = n
         self.cell_dict = {}
+        self.h = h
 
         # populate cell dict
         for i in range(0, self.num_cells):
             # we'll force cells to index by 1 to match existing convention
             self.cell_dict[i + 1] = Cell(
                 starting_density=start_list[i] if starts_provided else 0,
-                jam_density=jam_density_list[i],
+                x_upper=x_upper_list[i],
+                x_lower=x_lower_list[i],
                 w=w_list[i],
                 x_jam=x_jam_list[i],
                 v=v_list[i],
@@ -145,7 +152,7 @@ class Simulator():
             # each time step of the simulation is run in two stages
             # first, cycle through each cell and calculate densities for next time step
             for c in self.cell_dict:
-                self.cell_dict[c].calculate_next_step(self.u[c - 1][t])
+                self.cell_dict[c].calculate_next_step(self.u[c - 1][t], self.h)
             # then, update densities for each cell
             for c in self.cell_dict:
                 self.cell_dict[c].update()
@@ -157,16 +164,43 @@ class Simulator():
             results.append(self.state)
 
         results = np.matrix(results)
-        print(results)
         self.plot_results(results)
         return results
 
     def plot_results(self, results):
+        # plot cell density per time step
         fig, ax = plt.subplots()
         cax = ax.matshow(np.flipud(results[:, self.num_cells:2*self.num_cells].transpose()), aspect="auto")
         fig.colorbar(cax)
         plt.xlabel("Time Step")
         plt.ylabel("Cell")
+        plt.title("Cell Density")
+
+        cell_ticks = ['']
+        [cell_ticks.append(str(self.num_cells - i)) for i in range(0, self.num_cells)]
+        ax.set_yticklabels(cell_ticks)
+        ax.tick_params(axis='x', bottom=True, top=False, labelbottom=True, labeltop=False)
+
+        # plot onramp density per time step
+        fig, ax = plt.subplots()
+        cax = ax.matshow(np.flipud(results[:, :self.num_cells].transpose()), aspect="auto")
+        fig.colorbar(cax)
+        plt.xlabel("Time Step")
+        plt.ylabel("OnRamp")
+        plt.title("OnRamp Density")
+
+        cell_ticks = ['']
+        [cell_ticks.append(str(self.num_cells - i)) for i in range(0, self.num_cells)]
+        ax.set_yticklabels(cell_ticks)
+        ax.tick_params(axis='x', bottom=True, top=False, labelbottom=True, labeltop=False)
+
+        # plot congestion state per time step
+        fig, ax = plt.subplots()
+        cax = ax.matshow(np.flipud(results[:, 2 * self.num_cells:].transpose()), aspect="auto")
+        fig.colorbar(cax)
+        plt.xlabel("Time Step")
+        plt.ylabel("Cell")
+        plt.title("Congestion State")
 
         cell_ticks = ['']
         [cell_ticks.append(str(self.num_cells - i)) for i in range(0, self.num_cells)]

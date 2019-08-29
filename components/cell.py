@@ -3,10 +3,11 @@ from components.road import Road
 from components.onramp import OnRamp
 
 class Cell(Road):
-    def __init__(self, starting_density, jam_density, w, x_jam, v, attached_onramp=None):
+    def __init__(self, starting_density, x_upper, x_lower, w, x_jam, v, attached_onramp=None):
         super().__init__(starting_density)
 
-        self.jam_density = jam_density
+        self.x_upper = x_upper
+        self.x_lower = x_lower
 
         self.supply_slope = w
         self.supply_jam = x_jam
@@ -26,6 +27,8 @@ class Cell(Road):
 
         self.density_next_step = None
 
+        self.congested = False
+
     # gets
     def get_attached_onramp(self):
         return self.attached_onramp
@@ -35,20 +38,24 @@ class Cell(Road):
         self.attached_onramp = onramp_obj
 
     # other methods
-    def calculate_next_step(self, incoming_to_onramp):
+    def calculate_next_step(self, incoming_to_onramp, h):
 
         cur_density = self.get_current_density()
 
         new_from_onramp = self.attached_onramp.calculate_next_step(incoming_to_onramp)
 
-        # TODO: update with proper equation
+
         upstream_demand = self.upstream.demand() if self.upstream is not None else 0
         downstream_supply = self.downstream.supply() if self.downstream is not None else self.demand()
 
+        # TODO: update with proper equations that calculate flow between cells
         if self.is_congested():
             change_in_density = self.supply() - downstream_supply
         else:
             change_in_density = upstream_demand - self.demand()
+
+        # discretization factor
+        change_in_density = h * change_in_density
 
         self.density_next_step = max(cur_density + change_in_density + new_from_onramp, 0) # ensures never goes below 0
         return self.density_next_step
@@ -70,12 +77,20 @@ class Cell(Road):
 
     # TODO: determines whether cell is congested based on current state
     def is_congested(self):
-        return self.get_current_density() >= self.jam_density
+        # first checks to see if congestion state has changed
+        # if above x_upper, now congested regardless of previous state
+        if self.get_current_density() >= self.x_upper:
+            self.congested = True
+        # if below x_lower, now uncongested regardless of previous state
+        elif self.get_current_density() <= self.x_lower:
+            self.congested = False
+        # if neither, congestion state is the same (hysteresis)
+        return self.congested
 
     #helper functions
     def to_dict(self):
         output_dict = {
-            "jam_density": self.jam_density,
+            "x_upper": self.x_upper,
             "supply_w": self.supply_slope,
             "supply_jam": self.supply_jam,
             "demand_v": self.demand_slope

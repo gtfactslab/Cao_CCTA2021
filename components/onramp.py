@@ -33,9 +33,9 @@ class OnRamp(Road):
         new_density = cur_density + incoming_vehicles
 
         # calculate number of vehicles exiting ramp and calculate next density
-        # currently, the onramp forces up to the max flow rate of vehicles onto the attached cell, this behavior may change later
-        # TODO: should incoming vehicles automatically exit during the same time step if possible? (i.e. should this min be new_density or cur_density?)
-        exiting_vehicles = min(new_density, self.get_max_flow_rate())
+        # currently, the onramp forces up to the max flow rate of vehicles onto the attached cell
+        # incoming vehicles may not exit onramp until next time step
+        exiting_vehicles = min(cur_density, self.get_max_flow_rate())
         new_density = new_density - exiting_vehicles
 
         self.density_next_step = new_density
