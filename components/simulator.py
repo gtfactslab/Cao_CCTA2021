@@ -1,10 +1,12 @@
 #public libraries
 import numpy as np
 import matplotlib.pyplot as plt
+from time import time
 
 #our libraries
 from components.cell import Cell
 from components.onramp import OnRamp
+
 
 
 # Object for defining and storing structure/parameters of simulation
@@ -105,6 +107,8 @@ class Simulator():
         if inputs_provided:
             self.u = input_array
 
+        print("Simulator Object successfully instantiated.")
+
     # returns dict representation of simulation setup
     def to_dict(self):
         output_dict = {
@@ -146,6 +150,8 @@ class Simulator():
             print("ERROR: no input matrix provided or stored")
             return 0
 
+        start = time()
+
         results = []
         results.append(self.state)
         for t in range(0, len(self.u[0])):
@@ -163,11 +169,14 @@ class Simulator():
             # Save state
             results.append(self.state)
 
+        print("Simulation complete in {} seconds.".format(time()-start))
+
         results = np.matrix(results)
         self.plot_results(results)
         return results
 
     def plot_results(self, results):
+        print("Displaying Results.")
         # plot cell density per time step
         fig, ax = plt.subplots()
         cax = ax.matshow(np.flipud(results[:, self.num_cells:2*self.num_cells].transpose()), aspect="auto")
