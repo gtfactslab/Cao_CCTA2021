@@ -29,6 +29,9 @@ class Cell(Road):
 
         self.congested = False
 
+        self.inflow = 0
+        self.outflow = 0
+
     # gets
     def get_attached_onramp(self):
         return self.attached_onramp
@@ -44,19 +47,16 @@ class Cell(Road):
 
         new_from_onramp = self.attached_onramp.calculate_next_step(incoming_to_onramp)
 
+        # update self.inflow and self.outflow, then use to calculate change in density
+        self.retrieve_inflow_from_upstream()
+        self.calculate_outflow()
 
-        upstream_demand = self.upstream.demand() if self.upstream is not None else 0
-        downstream_supply = self.downstream.supply() if self.downstream is not None else self.demand()
-
-        # TODO: update with proper equations that calculate flow between cells
-        if self.is_congested():
-            change_in_density = self.supply() - downstream_supply
-        else:
-            change_in_density = upstream_demand - self.demand()
+        change_in_density = self.inflow - self.outflow
 
         # discretization factor
         change_in_density = h * change_in_density
 
+        # calculate density of next step (TODO: this is where cars incoming from onramp are added as they are "forced")
         self.density_next_step = max(cur_density + change_in_density + new_from_onramp, 0) # ensures never goes below 0
         return self.density_next_step
 
@@ -68,12 +68,30 @@ class Cell(Road):
         self.set_current_density(self.density_next_step)
         self.density_next_step = None
 
-    # TODO: is input density really just the current density?
     def supply(self):
         return self.supply_slope * self.current_density + self.supply_b
 
     def demand(self):
         return self.demand_slope * self.current_density
+
+    def calculate_outflow(self):
+        # each cell calculates its outflow to the next cell
+        if self.downstream is not None:
+            if self.downstream.is_congested():
+                self.outflow = min(self.demand(), self.downstream.supply())
+            else:
+                self.outflow = self.demand()
+        else:
+            self.outflow = self.demand()
+
+    def retrieve_inflow_from_upstream(self):
+        # cell assumes that if upstream exists, it has been called first and its outflow has been set
+        if self.upstream is not None:
+            self.inflow = self.upstream.outflow
+        else:
+            # if no upstream then only inflow is from onramp, which is taken care of in calculate_next_step
+            self.inflow = 0
+
 
     # TODO: determines whether cell is congested based on current state
     def is_congested(self):

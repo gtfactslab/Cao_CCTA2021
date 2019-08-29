@@ -186,8 +186,8 @@ class Simulator():
         cax = ax.matshow(np.flipud(results[:, :self.num_cells].transpose()), aspect="auto")
         fig.colorbar(cax)
         plt.xlabel("Time Step")
-        plt.ylabel("OnRamp")
-        plt.title("OnRamp Density")
+        plt.ylabel("On Ramp")
+        plt.title("On Ramp Density")
 
         cell_ticks = ['']
         [cell_ticks.append(str(self.num_cells - i)) for i in range(0, self.num_cells)]
