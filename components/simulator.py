@@ -32,7 +32,6 @@ class Simulator():
         inputs_provided = isinstance(input_array, np.ndarray)
 
         self.num_onramps = np.count_nonzero(onramp_flow_list)
-        self.onramp_supply_mode = "ALL"
 
         error = False
         if len(x_upper_list) != n:

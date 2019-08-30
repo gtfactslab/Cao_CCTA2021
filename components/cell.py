@@ -93,7 +93,7 @@ class Cell(Road):
             self.inflow = 0
 
 
-    # TODO: determines whether cell is congested based on current state
+    # determines whether cell is congested based on current state
     def is_congested(self):
         # first checks to see if congestion state has changed
         # if above x_upper, now congested regardless of previous state
