@@ -16,29 +16,27 @@ n = 5
 h = 1/100
 
 # congestion density values per cell
-x_upper_list = [400, 300, 200, 400, 400]
-x_lower_list = [300, 200, 100, 300, 300]
+x_upper_list = [300, 300, 300, 300, 300]
+x_lower_list = [200, 200, 200, 200, 200]
 
 # supply/demand parameters per cell
-w_list = [-50, -100, -200, -200, -200]
-x_jam_list = [500, 1000, 800, 900, 1000]
-v_list = [50, 40, 70, 60, 100]  # equivalent to free flow speed @ certain density
+w_list = [-100, -100, -100, -100, -100]
+x_jam_list = [600, 600, 600, 600, 600]
+v_list = [100, 100, 100, 100, 0]  # equivalent to free flow speed @ certain density
 
 # onramp parameters
 # max flow per onramp
 # if no onramp attached to cell, set flow to 0
-onramp_flow_list = [100, 0, 200, 0, 200]
+onramp_flow_list = [100, 0, 0, 0, 0]
 
 # start parameters (optional)
 start_list = None #[2, 4, 6]
 onramp_start_list = None # [1, 2, 3]
 
 # inputs
-u = np.array([[100, 300, 600, 600, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-              [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-              [100, 200, 300, 200, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-              [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-              [600, 600, 600, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]])
+# can either provide one row per cell (populate rows corresponding to cells with no onramp attached with zeros)
+# or can provide one row per attached onramp (experimental)
+u = np.array([[150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]])
 
 
 

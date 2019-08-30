@@ -31,6 +31,9 @@ class Simulator():
         onramp_starts_provided = bool(onramp_start_list)
         inputs_provided = isinstance(input_array, np.ndarray)
 
+        self.num_onramps = np.count_nonzero(onramp_flow_list)
+        self.onramp_supply_mode = "ALL"
+
         error = False
         if len(x_upper_list) != n:
             print("ERROR: x_upper_list must have one value per cell")
@@ -57,8 +60,9 @@ class Simulator():
             print("ERROR: onramp_start_list must have one value per cell (if no onramp attached, set value to 0)")
             error = True
         if inputs_provided and input_array.shape[0] != n:
-            print("ERROR: input_matrix must have one row of values per cell")
-            error = True
+            if input_array.shape[0] != self.num_onramps:
+                print("ERROR: input_matrix must have one row of values per cell OR one row of values per existing onramp")
+                error = True
 
         if error:
             return None
@@ -105,9 +109,26 @@ class Simulator():
         #set input if provided
         self.u = None
         if inputs_provided:
-            self.u = input_array
+            self.u = self.pad_and_match_inputs(input_array)
 
         print("Simulator Object successfully instantiated.")
+
+    def pad_and_match_inputs(self, inputs):
+        # process inputs if fewer rows than cells provided
+        if inputs.shape[0] != self.num_cells:
+            padded = np.empty((0, inputs.shape[1]), float)
+            o = 0
+            for c in self.cell_dict:
+                if self.cell_dict[c].get_attached_onramp().get_max_flow_rate() != 0:
+                    padded = np.vstack((padded, inputs[o, :]))
+                    o = o + 1
+                else:
+                    padded = np.vstack((padded, np.zeros((1, inputs.shape[1]))))
+            return np.array(padded)
+        else:
+        # if rows and cells match, then no processing needed
+            return inputs
+
 
     # returns dict representation of simulation setup
     def to_dict(self):
@@ -141,24 +162,26 @@ class Simulator():
     def run(self, u=None):
         if bool(u):
             if u.shape[0] != self.n:
-                print("ERROR: input_matrix must have one row of values per cell")
-                return 0
-            else:
-                self.u = u
+                if u.shape[0] != self.num_onramps:
+                    print("ERROR: input_matrix must have one row of values per cell OR one row of values per existing onramp")
+                    return 0
+            self.u = self.pad_and_match_inputs(u)
 
         if not isinstance(self.u, np.ndarray):
-            print("ERROR: no input matrix provided or stored")
+            print("ERROR: no valid input matrix provided or stored")
             return 0
 
         start = time()
 
         results = []
-        results.append(self.state)
         for t in range(0, len(self.u[0])):
             # each time step of the simulation is run in two stages
             # first, cycle through each cell and calculate densities for next time step
+            o = 0
             for c in self.cell_dict:
-                self.cell_dict[c].calculate_next_step(self.u[c - 1][t], self.h)
+                onramp_in = self.u[c - 1][t]
+                self.cell_dict[c].calculate_next_step(onramp_in, self.h)
+
             # then, update densities for each cell
             for c in self.cell_dict:
                 self.cell_dict[c].update()
@@ -210,6 +233,18 @@ class Simulator():
         plt.xlabel("Time Step")
         plt.ylabel("Cell")
         plt.title("Congestion State")
+
+        cell_ticks = ['']
+        [cell_ticks.append(str(self.num_cells - i)) for i in range(0, self.num_cells)]
+        ax.set_yticklabels(cell_ticks)
+        ax.tick_params(axis='x', bottom=True, top=False, labelbottom=True, labeltop=False)
+
+        fig, ax = plt.subplots()
+        cax = ax.matshow(np.flipud(self.u), aspect="auto")
+        fig.colorbar(cax)
+        plt.xlabel("Time Step")
+        plt.ylabel("On Ramp")
+        plt.title("Input to On Ramp")
 
         cell_ticks = ['']
         [cell_ticks.append(str(self.num_cells - i)) for i in range(0, self.num_cells)]
