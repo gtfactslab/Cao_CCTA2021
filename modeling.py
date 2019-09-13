@@ -49,15 +49,13 @@ x = Variable((c, N+1)) # x represents the density of each cell/onramp
 x_init = Parameter(c)
 x_init.value = x0
 
-f_init = Parameter(c)
-f_init.value = f0
-
 objective = 0
-constraints = [x[:,0] == x_init, f[:,0] == f_init]
+constraints = [x[:,0] == x_init]
 # iterate over time steps
 for k in range(N):
     # objective: minimize the sum of all cell/onramp densities over time
-    objective += sum(x[:,k] ** 2) # we want to square this value to convert from linear to quadratic
+    #objective += sum(x[:,k] ** 2) # we want to square this value to convert from linear to quadratic
+    objective += sum(x[:, k])
     # calculating density at each time step using values from previous timestep
     constraints += [x[:,k+1] == x[:, k] + h * (A @ f[:, k] + np.squeeze(B))]
     # constraints for demand & supply
