@@ -81,7 +81,19 @@ plt.ylabel("Cell")
 plt.title("Cell Density")
 
 cell_ticks = ['']
-[cell_ticks.append(str(c -1 - i)) for i in range(0, c-1)]
+[cell_ticks.append(str(c- i)) for i in range(0, c-1)]
+ax.set_yticklabels(cell_ticks)
+ax.tick_params(axis='x', bottom=True, top=False, labelbottom=True, labeltop=False)
+
+fig, ax = plt.subplots()
+cax = ax.matshow(np.flipud(x.value[-1:, :]), aspect="auto")
+fig.colorbar(cax)
+plt.xlabel("Time Step")
+plt.ylabel("On Ramp")
+plt.title("On Ramp Density")
+
+cell_ticks = ['']
+cell_ticks.append('1')
 ax.set_yticklabels(cell_ticks)
 ax.tick_params(axis='x', bottom=True, top=False, labelbottom=True, labeltop=False)
 plt.show()
