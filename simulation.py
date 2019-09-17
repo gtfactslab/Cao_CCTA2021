@@ -22,7 +22,7 @@ x_lower_list = [200, 200, 200, 200, 200]
 # supply/demand parameters per cell
 w_list = [-100, -100, -100, -100, -100]
 x_jam_list = [600, 600, 600, 600, 600]
-v_list = [100, 100, 100, 100, 0]  # equivalent to free flow speed @ certain density
+v_list = [100, 100, 100, 100, 10]  # equivalent to free flow speed @ certain density
 
 # onramp parameters
 # max flow per onramp
@@ -36,7 +36,7 @@ onramp_start_list = None # [1, 2, 3]
 # inputs
 # can either provide one row per cell (populate rows corresponding to cells with no onramp attached with zeros)
 # or can provide one row per attached onramp (experimental)
-u = np.array([[150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]])
+u = np.array([[150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150]])
 
 
 

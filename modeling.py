@@ -31,10 +31,10 @@ w_matrix = sparse.diags(w_list[1:])
 x_jam_list = [600, 600, 600, 600, 600]
 supply_b_list = np.array([[-1 * w_list[i] * x_jam_list[i]] for i in range(0, len(x_jam_list))])
 # demand
-v_matrix = sparse.diags([100, 100, 100, 100, 0])
+v_matrix = sparse.diags([100, 100, 100, 100, 10])
 
 # modeling horizon
-N = 40
+N = 41
 
 # discretization factor
 h = 1/100
@@ -70,7 +70,7 @@ prob = Problem(Minimize(objective), constraints)
 prob.solve(verbose=True)
 print(prob.value)
 print(f.value)
-print(x.value)
+#print(x.value)
 
 # plot cell density per time step
 fig, ax = plt.subplots()
@@ -81,7 +81,7 @@ plt.ylabel("Cell")
 plt.title("Cell Density")
 
 cell_ticks = ['']
-[cell_ticks.append(str(c- i)) for i in range(0, c-1)]
+[cell_ticks.append(str(c - i - 1)) for i in range(0, c-1)]
 ax.set_yticklabels(cell_ticks)
 ax.tick_params(axis='x', bottom=True, top=False, labelbottom=True, labeltop=False)
 
