@@ -3,6 +3,7 @@ import numpy as np
 import scipy as sp
 from scipy import sparse
 import matplotlib.pyplot as plt
+import gurobipy
 
 # overall problem formulation is x[k+1] = x[k] + A * f[k] + B
 # where f[k] is a vector [f_1, f_2, ... f_n, f_1r, ..., f_nr]' which represent the outflow from each cell/onramp respectively
@@ -44,8 +45,8 @@ A[:-1, :-1] = A[:-1, :-1] * h
 x0 = np.zeros(c)
 
 # Define problem
-f = Variable((c, N)) # f represents the flow rate exiting each cell/onramp
-x = Variable((c, N+1)) # x represents the density of each cell/onramp
+f = Variable((c, N), integer=True) # f represents the flow rate exiting each cell/onramp
+x = Variable((c, N+1), integer=True) # x represents the density of each cell/onramp
 
 x_init = Parameter(c)
 x_init.value = x0
@@ -56,6 +57,7 @@ constraints = [x[:,0] == x_init]
 for k in range(N):
     # objective: minimize the sum of all cell/onramp densities over time
     objective += sum(x[:,k] ** 2) # we want to square this value to convert from linear to quadratic
+    #objective += sum(f[-2, k]) #EXPERIMENT: see what happens if we try to maximize flow instead of minimize density
     # calculating density at each time step using values from previous timestep
     constraints += [x[:,k+1] == x[:, k] + A @ f[:, k] + np.squeeze(B)]
     # constraints for demand & supply
@@ -66,8 +68,9 @@ for k in range(N):
 constraints += [x >= 0, f >= 0]
 
 prob = Problem(Minimize(objective), constraints)
+#prob = Problem(Maximize(objective), constraints)#EXPERIMENT: see what happens if we try to maximize flow instead of minimize density
 
-prob.solve(verbose=True)
+prob.solve(verbose=True, solver=GUROBI)
 print(prob.value)
 print(f.value)
 #print(x.value)
