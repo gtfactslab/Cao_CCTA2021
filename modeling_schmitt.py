@@ -8,93 +8,169 @@ import gurobipy
 # convex relaxation setup
 
 # constants
-delta_t = 0.5
+delta_t = 1/300
 time_steps = 40
-num_cells = 6 # five freeway cells and one onramp to cell 1
+num_cells = 5 # five freeway cells, each with an attached onramp (if no onramp actually attached, set r_bar and q_bar to 0)
 
-beta = np.zeros((num_cells, num_cells))
-for i in range(0, num_cells-1):
-    beta[i+1][i] = 1
-beta[0][5] = 1 # turning rate of traffic onto cell 0 from cell 5
+beta = [1, 1, 1, 1, 1] # turning rate from cell onto next cell
 
 # reference values for
 # supply
-w_list = [-100, -100, -100, -100, -100, -10]
-x_jam_list = [600, 600, 600, 600, 600, 200]
+w_list = [-100, -100, -100, -100, -100]
+x_jam_list = [300, 300, 300, 300, 300]
 supply_b_list = [-1 * w_list[i] * x_jam_list[i] for i in range(0, len(x_jam_list))]
 # demand
-v_list = [100, 100, 100, 100, 100, 100]
+v_list = [100, 100, 100, 100, 10]
 
 # variables
-rho = Variable((num_cells, time_steps+1)) # represents the density in the cell
-length = [1, 1, 1, 1, 1, 1] # represents length of each cell
+rho = Variable((num_cells, time_steps+1), integer=True) # represents the density in the cell
+length = [1, 1, 1, 1, 1] # represents length of each cell
 
 phi = Variable((num_cells, time_steps)) # represents outflow from each cell
 
-omega = np.zeros((num_cells, time_steps)) # represents outside pressure
-for i in range(time_steps):
-    omega[5, i] = 1500
+q = Variable((num_cells, time_steps + 1), integer=True) # represents queue length in each onramp
+r = Variable((num_cells, time_steps), integer=True) # represents outflow from each onramp
 
-# initial state
+q_bar = [1500, 0, 0, 0, 0] # queue length limit (currently unused as it makes the problem unsolvable)
+r_bar = [100, 0, 0, 0, 0] # onramp flow limit
+
+omega = np.zeros((num_cells, time_steps)) # represents outside pressure to onramps
+for i in range(time_steps):
+    omega[0, i] = 300
+
+
+# initial states
 rho_0 = np.zeros(num_cells)
 rho_init = Parameter(num_cells)
 rho_init.value = rho_0
+print(rho_0)
+
+q_0 = np.zeros(num_cells)
+q_init = Parameter(num_cells)
+q_init.value = q_0
 
 # objective function
 objective = 0
 
 # constraints
 constraints = [rho[:, 0] == rho_init]
+constraints += [q[:, 0] == q_init]
 
 # iterate over time steps
 for t in range(time_steps):
-    for e in range(num_cells):
+    for k in range(num_cells):
         # objective function
-        objective += delta_t * length[e] * rho[e, t]
+        objective += delta_t * (length[k] * rho[k, t] + q[k, t])
 
         # constraints
-        if t == 0:
-            omega_term = 0
-        else:
-            omega_term = omega[e, t - 1]
-        constraints += [rho[e, t+1] == rho[e, t] + (delta_t/length[e]) *
-                        (sum([beta[e][i] * phi[i, t] for i in range(num_cells)]) - phi[e, t] + omega_term)]
-        constraints += [phi[e, t] <= rho[e, t] * v_list[e]] # demand
-        if e < 5:
-            constraints += [beta[e+1][e] * phi[e, t] <= rho[e, t]*w_list[e] + supply_b_list[e]] # supply
-        if e == 5:
-            constraints += [phi[e, t] >= 0]
 
-# add non-negative constraints on rho as a check
+        # flow constraints between cells
+        constraints += [phi[k, t] <= rho[k, t] * v_list[k]] # demand
+        if k < num_cells-1:
+            constraints += [beta[k] * phi[k, t] <= rho[k+1, t] * w_list[k+1] + supply_b_list[k+1]] # supply
+            # last cell has access to unlimited supply
+
+        # cell density update
+        if k == 0:
+            prev_cell_flow = 0 # represents flow entering first cell
+        else:
+            prev_cell_flow = beta[k-1] * phi[k-1, t]
+
+
+        constraints += [rho[k, t + 1] == rho[k, t] + (delta_t / length[k]) *
+                        (prev_cell_flow + r[k, t] - phi[k, t])]
+
+        # onramp queue update
+        # if onramp actually attached
+        if q_bar[k] > 0:
+            if t == 0:
+                omega_term = 0
+            else:
+                omega_term = omega[k, t - 1]
+            constraints += [q[k, t+1] == q[k, t] + delta_t * (omega_term - r[k, t])]
+
+            # density and flow constraints for onramps
+            #constraints += [q[k, t] <= q_bar[k]]
+            constraints += [r[k, t] <= r_bar[k]]
+
+            #supply and demand constraints for onramps
+            constraints += [r[k, t] <= (1.0/delta_t)*q[k, t] + omega_term] # demand
+            constraints += [r[k, t] <= rho[k, t] * w_list[k] + supply_b_list[k]] # supply
+
+        # else, it remains 0
+        else:
+            constraints += [q[k, t + 1] == 0]
+            constraints += [r[k, t] == 0]
+
+# add non-negative constraints on applicable cells as a check
 constraints += [rho >= 0]
+constraints += [q >= 0]
+constraints += [r >= 0] # we only apply nonnegative to onramp flow as they are controllable
 
 prob = Problem(Minimize(objective), constraints)
 prob.solve(verbose=True)
-print(prob.value)
-print(phi.value)
+#print(prob.value)
+#print(phi.value)
+#print(rho.value)
+#print(r.value)
+desired_cell = 0
+for t in range(time_steps):
+    print(t)
+    supply = rho.value[desired_cell+1, t] * w_list[desired_cell+1] + supply_b_list[desired_cell+1]
+    print("SUPPLY: {} <= {}".format(phi.value[desired_cell, t], supply))
+    demand = rho.value[desired_cell, t] * v_list[desired_cell]
+    print("DEMAND: {} <= {}".format(phi.value[desired_cell, t], demand))
+    print("DENSITY: {} = {} + {}/{}*({} + {} - {})".format(rho.value[desired_cell, t+1], rho.value[desired_cell, t], delta_t, length[desired_cell], 0, r.value[desired_cell, t], phi.value[desired_cell, t]))
+
 
 # plot cell density per time step
 fig, ax = plt.subplots()
-cax = ax.matshow(np.flipud(rho.value[:-1, :-1]), aspect="auto")
+cax = ax.matshow(np.flipud(rho.value[:, :-1]), aspect="auto")
 fig.colorbar(cax)
 plt.xlabel("Time Step")
 plt.ylabel("Cell")
 plt.title("Cell Density")
 
 cell_ticks = ['']
-[cell_ticks.append(str(num_cells - i - 1)) for i in range(0, num_cells-1)]
+[cell_ticks.append(str(num_cells - i)) for i in range(0, num_cells)]
 ax.set_yticklabels(cell_ticks)
 ax.tick_params(axis='x', bottom=True, top=False, labelbottom=True, labeltop=False)
 
 fig, ax = plt.subplots()
-cax = ax.matshow(np.flipud(rho.value[-1:, :-1]), aspect="auto")
+cax = ax.matshow(np.flipud(phi.value[:, :-1]), aspect="auto")
+fig.colorbar(cax)
+plt.xlabel("Time Step")
+plt.ylabel("Cell")
+plt.title("Cell Flow")
+
+cell_ticks = ['']
+[cell_ticks.append(str(num_cells - i)) for i in range(0, num_cells)]
+ax.set_yticklabels(cell_ticks)
+ax.tick_params(axis='x', bottom=True, top=False, labelbottom=True, labeltop=False)
+
+fig, ax = plt.subplots()
+cax = ax.matshow(np.flipud(q.value[:, :-1]), aspect="auto")
 fig.colorbar(cax)
 plt.xlabel("Time Step")
 plt.ylabel("On Ramp")
 plt.title("On Ramp Density")
 
 cell_ticks = ['']
-cell_ticks.append('1')
+[cell_ticks.append(str(num_cells - i)) for i in range(0, num_cells)]
 ax.set_yticklabels(cell_ticks)
 ax.tick_params(axis='x', bottom=True, top=False, labelbottom=True, labeltop=False)
+
+
+fig, ax = plt.subplots()
+cax = ax.matshow(np.flipud(r.value[:, :-1]), aspect="auto")
+fig.colorbar(cax)
+plt.xlabel("Time Step")
+plt.ylabel("On Ramp")
+plt.title("On Ramp Flow")
+
+cell_ticks = ['']
+[cell_ticks.append(str(num_cells - i)) for i in range(0, num_cells)]
+ax.set_yticklabels(cell_ticks)
+ax.tick_params(axis='x', bottom=True, top=False, labelbottom=True, labeltop=False)
+
 plt.show()
