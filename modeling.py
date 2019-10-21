@@ -33,9 +33,12 @@ B_2 = np.array([
   [0.]]) # after a certain point, we want much fewer vehicles to enter
 [r, c] = A.shape
 
+#represents ratio of cars that actually progress to next cell
+betas = sparse.diags([0.5, 0.5, 0.5, 0.5, 0.5, 1])
+
 # reference values for
 # supply
-w_list = [-100, -100, -100, -100, -100]
+w_list = [-200, -200, -200, -200, -200]
 w_matrix = sparse.diags(w_list[1:])
 x_jam_list = [600, 600, 600, 600, 600]
 supply_b_list = np.array([[-1 * w_list[i] * x_jam_list[i]] for i in range(0, len(x_jam_list))])
@@ -44,7 +47,7 @@ v_list = [100, 100, 100, 100, 10]
 v_matrix = sparse.diags(v_list)
 
 # modeling horizon
-N = 61
+N = 41
 
 # discretization factor
 h = 1/100
@@ -65,17 +68,24 @@ constraints = [x[:,0] == x_init]
 # iterate over time steps
 for k in range(N):
     # objective: minimize the sum of all cell/onramp densities over time
-    objective += sum(x[:-1,k]) # we want to square this value to convert from linear to quadratic
+    objective += sum(x[:-1,k])
 
     # calculating density at each time step using values from previous timestep
     if k < 41:
-        constraints += [x[:,k+1] == x[:, k] + A @ f[:, k] + np.squeeze(B_1)]
+        constraints += [x[:,k+1] == x[:, k] + betas @ A @ f[:, k] + np.squeeze(B_1)]
     else:
-        constraints += [x[:, k + 1] == x[:, k] + A @ f[:, k] + np.squeeze(B_2)]
+        constraints += [x[:, k + 1] == x[:, k] + betas @ A @ f[:, k] + np.squeeze(B_2)]
     # constraints for demand & supply
     constraints += [f[-1, k] == 100] # last flow, f_1r in this case, has consistent outflow (aka no control)
     constraints += [f[:-1,k] <= x[:-1,k] @ v_matrix,
                     f[:-2,k] <= x[1:-1,k] @ w_matrix + np.squeeze(supply_b_list[1:])]
+    # for i in range(r - 1):
+    #     #constraints += [f[i, k] <= x[i, k] * v_list[i]]
+    #     if i < r - 2:
+    #     #    constraints += [f[i, k] <= x[i+1, k] * w_list[i+1] + supply_b_list[i+1]]
+    #         constraints += [f[i, k] == cvxpy.minimum(x[i, k] * v_list[i], x[i+1, k] * w_list[i+1] + supply_b_list[i+1])]
+    #     else:
+    #         constraints += [f[i, k] == x[i, k] * v_list[i]]
 # impose non-negative constraint on x and flow, as a check
 constraints += [x >= 0, f >= 0]
 
