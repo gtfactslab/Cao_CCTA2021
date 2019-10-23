@@ -87,6 +87,7 @@ for k in range(N):
         constraints += [f[-1, k] == 0] # first time step has no outflow as there are no cars in the system
     else:
         constraints += [f[-1, k] == 30 * u[0, k]] # last flow, f_1r in this case, is controlled by u
+        constraints += [f[-1, k] <= x[-1, k]]  # must also be lower than current density
     constraints += [f[:-1,k] <= x[:-1,k] @ v_matrix,
                     f[:-2,k] <= x[1:-1,k] @ w_matrix + np.squeeze(supply_b_list[1:])]
     # for i in range(r - 1):
