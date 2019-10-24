@@ -3,7 +3,7 @@ from components.road import Road
 from components.onramp import OnRamp
 
 class Cell(Road):
-    def __init__(self, starting_density, x_upper, x_lower, w, x_jam, v, attached_onramp=None):
+    def __init__(self, starting_density, x_upper, x_lower, w, x_jam, v, beta, attached_onramp=None):
         super().__init__(starting_density)
 
         self.x_upper = x_upper
@@ -14,6 +14,10 @@ class Cell(Road):
         self.supply_b = -1 * self.supply_slope * self.supply_jam
 
         self.demand_slope = v
+
+        # represents the ratio of cars that progress onto the next cell as opposed to exiting through an offramp
+        # TODO: determine which beta to use (i.e. should beta_i represent the link b/t cells [i-1, i] or [i, i+1])?
+        self.beta = beta
 
         if bool(attached_onramp):
             self.attached_onramp = attached_onramp
@@ -87,7 +91,8 @@ class Cell(Road):
     def retrieve_inflow_from_upstream(self):
         # cell assumes that if upstream exists, it has been called first and its outflow has been set
         if self.upstream is not None:
-            self.inflow = self.upstream.outflow
+            # TODO: see questions about beta above
+            self.inflow = self.upstream.beta * self.upstream.outflow
         else:
             # if no upstream then only inflow is from onramp, which is taken care of in calculate_next_step
             self.inflow = 0

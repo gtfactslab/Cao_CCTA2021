@@ -24,6 +24,9 @@ w_list = [-20, -20, -20, -20, -20]
 x_jam_list = [320, 320, 320, 320, 320]
 v_list = [60, 60, 60, 60, 5]  # equivalent to free flow speed @ certain density
 
+# beta for each cell
+beta_list = [1, 1, 1, 1, 1]
+
 # onramp parameters
 # max flow per onramp
 # if no onramp attached to cell, set flow to 0
@@ -49,6 +52,7 @@ sim_obj = Simulator(total_time=total_time,
                     w_list=w_list,
                     x_jam_list=x_jam_list,
                     v_list=v_list,
+                    beta_list=beta_list,
                     onramp_flow_list=onramp_flow_list,
                     start_list=start_list,
                     onramp_start_list=onramp_start_list,

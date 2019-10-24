@@ -21,6 +21,7 @@ class Simulator():
                  w_list,
                  x_jam_list,
                  v_list,
+                 beta_list,
                  onramp_flow_list,
                  start_list=None,
                  onramp_start_list=None,
@@ -48,6 +49,9 @@ class Simulator():
             error = True
         if len(v_list) != n:
             print("ERROR: v_list must have one value per cell")
+            error = True
+        if len(beta_list) != n:
+            print("ERROR: beta_list must have one value per cell")
             error = True
         if len(onramp_flow_list) != n:
             print("ERROR: onramp_flow_list must have one value per cell (if no onramp attached, set value to 0)")
@@ -86,6 +90,7 @@ class Simulator():
                 w=w_list[i],
                 x_jam=x_jam_list[i],
                 v=v_list[i],
+                beta=beta_list[i],
                 attached_onramp=OnRamp(
                     starting_density=onramp_start_list[i] if onramp_starts_provided else 0,
                     max_flow_rate=onramp_flow_list[i] # if no onramp attached, set to 0 for equivalent behavior
@@ -158,7 +163,7 @@ class Simulator():
         return self.state
 
     # runs simulation based on current parameters
-    def run(self, u=None):
+    def run(self, u=None, controller=None):
         if bool(u):
             if u.shape[0] != self.n:
                 if u.shape[0] != self.num_onramps:
@@ -176,7 +181,6 @@ class Simulator():
         for t in range(0, len(self.u[0])):
             # each time step of the simulation is run in two stages
             # first, cycle through each cell and calculate densities for next time step
-            o = 0
             for c in self.cell_dict:
                 onramp_in = self.u[c - 1][t]
                 self.cell_dict[c].calculate_next_step(onramp_in, self.h)
