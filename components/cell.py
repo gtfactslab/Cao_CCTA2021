@@ -17,6 +17,7 @@ class Cell(Road):
 
         # represents the ratio of cars that progress onto the next cell as opposed to exiting through an offramp
         # TODO: determine which beta to use (i.e. should beta_i represent the link b/t cells [i-1, i] or [i, i+1])?
+        # for now it's the latter to match mpc setup
         self.beta = beta
 
         if bool(attached_onramp):
