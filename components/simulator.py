@@ -163,7 +163,7 @@ class Simulator():
         return self.state
 
     # runs simulation based on current parameters
-    def run(self, u=None, controller=None):
+    def run(self, u=None, controller=None, debug=False):
         if bool(u):
             if u.shape[0] != self.n:
                 if u.shape[0] != self.num_onramps:
