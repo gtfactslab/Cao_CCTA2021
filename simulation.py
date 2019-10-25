@@ -26,12 +26,12 @@ x_jam_list = [320, 320, 320, 320, 320]
 v_list = [60, 60, 60, 60, 45]  # equivalent to free flow speed @ certain density
 
 # beta for each cell
-beta_list = [0.75, 0.8, 0.85, 0.9, 1]
+beta_list = [0.75, 0.75, 0.75, 0.75, 1]
 
 # onramp parameters
 # max flow per onramp
 # if no onramp attached to cell, set flow to 0
-onramp_flow_list = [60, 20, 0, 30, 0]
+onramp_flow_list = [30, 0, 40, 60, 0]
 
 # start parameters (optional)
 start_list = None #[2, 4, 6]
@@ -70,6 +70,7 @@ mpcontroller = MPC(h=h,
                    input_array=u,
                    modeling_horizon=51)
 
-print(mpcontroller.compute_next_command(21, [50, 0, 0, 20, 0, 20, 20, 0, 0, 0, 0, 0, 0, 0, 0], True))
+#print(mpcontroller.compute_next_command(21, [50, 0, 0, 20, 0, 20, 20, 0, 0, 0, 0, 0, 0, 0, 0], False))
 
 #sim_obj.run()
+sim_obj.run(controller=mpcontroller)

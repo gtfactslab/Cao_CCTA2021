@@ -22,7 +22,7 @@ class OnRamp(Road):
     # other methods
 
     # given input # of vehicles, calculate next time step's density and return number of vehicles exiting the onramp
-    def calculate_next_step(self, incoming_vehicles):
+    def calculate_next_step(self, incoming_vehicles, control=None):
         if self.get_max_flow_rate() == 0:
             self.density_next_step = 0
             return 0
@@ -32,10 +32,18 @@ class OnRamp(Road):
         # add incoming vehicles onto ramp
         new_density = cur_density + incoming_vehicles
 
+        # if input control not provided or invalid, default to 1
+        if control is None:
+            control = 1
+
+        if control > 1 or control < 0:
+            print("WARNING: Invalid control signal sent, will default to 1")
+            control = 1
+
         # calculate number of vehicles exiting ramp and calculate next density
         # currently, the onramp forces up to the max flow rate of vehicles onto the attached cell
         # incoming vehicles may not exit onramp until next time step
-        exiting_vehicles = min(cur_density, self.get_max_flow_rate())
+        exiting_vehicles = min(cur_density, self.get_max_flow_rate() * control)
         new_density = new_density - exiting_vehicles
 
         self.density_next_step = new_density

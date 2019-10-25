@@ -46,11 +46,11 @@ class Cell(Road):
         self.attached_onramp = onramp_obj
 
     # other methods
-    def calculate_next_step(self, incoming_to_onramp, h):
+    def calculate_next_step(self, incoming_to_onramp, h, onramp_control=None):
 
         cur_density = self.get_current_density()
 
-        new_from_onramp = self.attached_onramp.calculate_next_step(incoming_to_onramp)
+        new_from_onramp = self.attached_onramp.calculate_next_step(incoming_to_onramp, onramp_control)
 
         # update self.inflow and self.outflow, then use to calculate change in density
         self.retrieve_inflow_from_upstream()

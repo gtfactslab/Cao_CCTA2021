@@ -162,7 +162,7 @@ class MPC(Controller):
         if debug:
             self.plot_results(x, f, u)
 
-        return u.value[:, 0] # return commands for all onramps
+        return np.expand_dims(u.value[:, 0], axis=0).transpose() # return commands for all onramps
 
     def plot_results(self, x, f, u):
         # FOR DEBUGGING

@@ -179,11 +179,18 @@ class Simulator():
 
         results = []
         for t in range(0, len(self.u[0])):
-            # each time step of the simulation is run in two stages
+            # each time step of the simulation is run in two (or three) stages
+            # if a controller is provided, call the appropriate method and calculate control inputs
+            if controller is not None:
+                control_commands = controller.compute_next_command(t, self.state, debug)
+                control_commands = self.pad_and_match_inputs(control_commands)
             # first, cycle through each cell and calculate densities for next time step
+
             for c in self.cell_dict:
                 onramp_in = self.u[c - 1][t]
-                self.cell_dict[c].calculate_next_step(onramp_in, self.h)
+                self.cell_dict[c].calculate_next_step(onramp_in,
+                                                      self.h,
+                                                      float(control_commands[c - 1]) if controller is not None else None)
 
             # then, update densities for each cell
             for c in self.cell_dict:
@@ -197,7 +204,8 @@ class Simulator():
 
         print("Simulation complete in {} seconds.".format(time()-start))
 
-        results = np.matrix(results)
+        results = np.array(results)
+        if debug: print(results)
         self.plot_results(results)
         return results
 
