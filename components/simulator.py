@@ -175,6 +175,8 @@ class Simulator():
             print("ERROR: no valid input matrix provided or stored")
             return 0
 
+        cars_exited_network = 0
+
         start = time()
 
         results = []
@@ -191,6 +193,7 @@ class Simulator():
                 self.cell_dict[c].calculate_next_step(onramp_in,
                                                       self.h,
                                                       float(control_commands[c - 1]) if controller is not None else None)
+                cars_exited_network += self.cell_dict[c].cars_leaving_network(self.h)
 
             # then, update densities for each cell
             for c in self.cell_dict:
@@ -203,6 +206,7 @@ class Simulator():
             results.append(self.state)
 
         print("Simulation complete in {} seconds.".format(time()-start))
+        print("{} cars were able to exit the network during the simulation.".format(cars_exited_network))
 
         results = np.array(results)
         if debug: print(results)
@@ -210,7 +214,7 @@ class Simulator():
         return results
 
     def plot_results(self, results):
-        print("Displaying Results.")
+        print("Plotting Results.")
         # plot cell density per time step
         fig, ax = plt.subplots()
         cax = ax.matshow(np.flipud(results[:, self.num_cells:2*self.num_cells].transpose()), aspect="auto")

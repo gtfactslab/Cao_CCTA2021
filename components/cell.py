@@ -89,6 +89,14 @@ class Cell(Road):
         else:
             self.outflow = self.demand()
 
+    # this uses the stored outflow for calculation, so make sure you've called calculate_outflow first
+    # should be safe if you call calculate_next_step before calling this
+    def cars_leaving_network(self, h):
+        if self.downstream is not None:
+            return self.outflow * (1 - self.beta) * h
+        else:
+            return self.outflow * h
+
     def retrieve_inflow_from_upstream(self):
         # cell assumes that if upstream exists, it has been called first and its outflow has been set
         if self.upstream is not None:
