@@ -11,7 +11,7 @@ from components.controller import Controller
 class SMPC(Controller):
     def __init__(self, h, x_upper_list, x_lower_list, w_list, x_jam_list, v_list, beta_list, onramp_flow_list, input_array, modeling_horizon=11):
         # Init using params from simulation
-        error = False #TODO: Put in checks
+        error = False #TODO: Put in checks for inputs
 
         # discretization
         self.h = h
@@ -20,6 +20,7 @@ class SMPC(Controller):
         self.x_upper_list = x_upper_list
         self.x_lower_list = x_lower_list
         self.buffer = 5 # misc param for what actual sim will aim for instead of x_upper
+        # TODO: make this more formal
 
         # supply
         self.w_list = w_list

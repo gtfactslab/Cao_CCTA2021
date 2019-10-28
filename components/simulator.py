@@ -214,7 +214,7 @@ class Simulator():
         return results
 
     def plot_results(self, results):
-        print("Plotting Results.")
+        print("Plotting Results...")
         # plot cell density per time step
         fig, ax = plt.subplots()
         cax = ax.matshow(np.flipud(results[:, self.num_cells:2*self.num_cells].transpose()), aspect="auto")
