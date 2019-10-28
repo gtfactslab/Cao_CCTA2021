@@ -4,6 +4,7 @@ import numpy as np
 # our libraries
 from components.simulator import Simulator
 from sample_controllers.ModelPredictiveController import MPC
+from sample_controllers.SwitchingModelPredictiveController import SMPC
 
 # time parameters (not used in calculations)
 total_time = 3600
@@ -17,8 +18,8 @@ n = 5
 h = 1/120
 
 # congestion density values per cell
-x_upper_list = [150, 150, 150, 150, 150]
-x_lower_list = [100, 100, 100, 100, 100]
+x_upper_list = [100, 100, 100, 100, 100]
+x_lower_list = [60, 60, 60, 60, 60]
 
 # supply/demand parameters per cell
 w_list = [-20, -20, -20, -20, -20]
@@ -70,7 +71,19 @@ mpcontroller = MPC(h=h,
                    input_array=u,
                    modeling_horizon=51)
 
+smpcontroller = SMPC(h=h,
+                     x_upper_list=x_upper_list,
+                     x_lower_list=x_lower_list,
+                     w_list=w_list,
+                     x_jam_list=x_jam_list,
+                     v_list=v_list,
+                     beta_list=beta_list,
+                     onramp_flow_list=onramp_flow_list,
+                     input_array=u,
+                     modeling_horizon=51)
+
 #print(mpcontroller.compute_next_command(21, [50, 0, 0, 20, 0, 20, 20, 0, 0, 0, 0, 0, 0, 0, 0], False))
 
 #sim_obj.run()
-sim_obj.run(controller=mpcontroller)
+#sim_obj.run(controller=mpcontroller)
+sim_obj.run(controller=smpcontroller)
