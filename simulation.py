@@ -35,15 +35,21 @@ beta_list = [0.75, 0.75, 0.75, 0.75, 1]
 onramp_flow_list = [30, 0, 40, 60, 0]
 
 # start parameters (optional)
-start_list = None #[2, 4, 6]
+start_list = None #[200, 200, 200, 200, 200] #None #[2, 4, 6]
 onramp_start_list = None # [1, 2, 3]
 
 # inputs
 # can either provide one row per cell (populate rows corresponding to cells with no onramp attached with zeros)
 # or can provide one row per attached onramp (experimental)
-u = np.array([[40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40],
-              [80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80],
-              [80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80]])
+expected_u = np.array([[40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40],
+                       [40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40],
+                       [40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40]])
+
+actual_u = np.array([[40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40],
+                     [40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80],
+                     [40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80]])
+
+#actual_u = np.hstack((actual_u, actual_u))
 
 
 
@@ -60,7 +66,7 @@ sim_obj = Simulator(total_time=total_time,
                     onramp_flow_list=onramp_flow_list,
                     start_list=start_list,
                     onramp_start_list=onramp_start_list,
-                    input_array=u)
+                    input_array=actual_u)
 
 mpcontroller = MPC(h=h,
                    w_list=w_list,
@@ -68,7 +74,7 @@ mpcontroller = MPC(h=h,
                    v_list=v_list,
                    beta_list=beta_list,
                    onramp_flow_list=onramp_flow_list,
-                   input_array=u,
+                   input_array=expected_u,
                    modeling_horizon=51)
 
 smpcontroller = SMPC(h=h,
@@ -79,7 +85,7 @@ smpcontroller = SMPC(h=h,
                      v_list=v_list,
                      beta_list=beta_list,
                      onramp_flow_list=onramp_flow_list,
-                     input_array=u,
+                     input_array=expected_u,
                      modeling_horizon=51)
 
 #print(mpcontroller.compute_next_command(21, [50, 0, 0, 20, 0, 20, 20, 0, 0, 0, 0, 0, 0, 0, 0], False))

@@ -83,7 +83,7 @@ class Cell(Road):
         # each cell calculates its outflow to the next cell
         if self.downstream is not None:
             if self.downstream.is_congested():
-                self.outflow = min(self.demand(), self.downstream.supply())
+                self.outflow = max(min(self.demand(), self.downstream.supply()), 0) # TODO: is this allowed to go below 0?
             else:
                 self.outflow = self.demand()
         else:
