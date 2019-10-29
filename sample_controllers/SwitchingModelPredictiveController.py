@@ -19,7 +19,9 @@ class SMPC(Controller):
         # x_upper and x_lower
         self.x_upper_list = x_upper_list
         self.x_lower_list = x_lower_list
-        self.buffer = 2 # misc param for what actual sim will aim for instead of x_upper, 2 appears to be best
+        self.buffer = 2 # misc param for what actual sim will aim for instead of x_upper
+        # 2 appears to be best when perceived input matches actual
+        # 9 when they don't match
         # TODO: make this more formal
 
         # supply
