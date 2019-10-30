@@ -19,9 +19,12 @@ class SMPC(Controller):
         # x_upper and x_lower
         self.x_upper_list = x_upper_list
         self.x_lower_list = x_lower_list
-        self.buffer = 2 # misc param for what actual sim will aim for instead of x_upper
-        # 2 appears to be best when perceived input matches actual
-        # 9 when they don't match
+        # misc params for what actual sim will aim for
+        self.up_buffer = 10
+        # 6 seems to work well for upper
+        self.low_buffer = 10
+        # 5 seems to work well for lower
+        # setting both to 10 seems safe
         # TODO: make this more formal
 
         # supply
@@ -125,21 +128,26 @@ class SMPC(Controller):
         self.v_matrix = sparse.diags(self.v_list)
 
         # supply either overapproximates or underapproximates based on congestion state
-        new_w_list = []
+        self.new_w_list = []
         for c in range(self.num_cells):
             if congestion_state[c] == 1:
-                new_x_critical = self.x_lower_list[c]
+                new_x_critical = self.x_lower_list[c] - self.low_buffer
                 # if congested, underapproximate supply using x_lower as new critical point
             else:
-                new_x_critical = self.x_upper_list[c] - self.buffer
+                new_x_critical = self.x_upper_list[c] - self.up_buffer
                 # if not, overapproximate supply using x_upper as new critical point (with a buffer to avoid cycling around congestion)
 
-            w = (self.v_list[c] * new_x_critical) / (new_x_critical - float(self.x_jam_list[c]))
-            new_w_list.append(w)
+            if c > 0:
+                w = (self.v_list[c-1] * new_x_critical) / (new_x_critical - float(self.x_jam_list[c]))
+                # TODO: currently calculate based on crossover between demand of previous cell and supply of this cell
+                # used to have both be this cell, which is correct?
+            else:
+                w = 0 # first cell never calculate supply so this w value is pointless
+            self.new_w_list.append(w)
 
-        self.w_matrix = sparse.diags(new_w_list[1:])
+        self.w_matrix = sparse.diags(self.new_w_list[1:])
         self.supply_b_list = np.array(
-            [[-1 * new_w_list[i] * self.x_jam_list[i]] for i in range(0, len(self.x_jam_list))])
+            [[-1 * self.new_w_list[i] * self.x_jam_list[i]] for i in range(0, len(self.x_jam_list))])
 
 
         # Define problem
@@ -191,12 +199,14 @@ class SMPC(Controller):
 
     def plot_results(self, x, f, u):
         # FOR DEBUGGING
-        desired_cell = 0
-        for desired_cell in range(5):
+        for desired_cell in range(self.num_cells):
             supplys = []
             demands = []
             flows = []
             times = []
+            densities = []
+            x_upper = []
+            x_lower = []
             for t in range(self.N):
                 times.append(t)
 
@@ -204,12 +214,16 @@ class SMPC(Controller):
                 demands.append(demand * self.h)
 
                 if desired_cell < self.num_cells - 1:
-                    supply = x.value[desired_cell + 1, t] * self.w_list[desired_cell + 1] + self.supply_b_list[desired_cell + 1]
+                    supply = x.value[desired_cell + 1, t] * self.new_w_list[desired_cell + 1] + self.supply_b_list[desired_cell + 1]
                 else:
                     supply = demand
                 supplys.append(supply * self.h)
 
                 flows.append(f.value[desired_cell, t] * self.h)
+
+                densities.append(x.value[desired_cell, t])
+                x_upper.append(self.x_upper_list[desired_cell])
+                x_lower.append(self.x_lower_list[desired_cell])
 
             fig, ax = plt.subplots()
             ax.plot(times, supplys, linestyle="dotted")
@@ -218,7 +232,16 @@ class SMPC(Controller):
             plt.xlabel("Time Step")
             plt.ylabel("Value (# of cars)")
             plt.title("Cell {} Flow vs. Supply/Demand".format(desired_cell + 1))
-            ax.legend(['next cell supply', 'demand', 'outflow'])
+            ax.legend(['next cell supply (perceived)', 'demand', 'outflow'])
+
+            fig, ax = plt.subplots()
+            ax.plot(times, densities)
+            ax.plot(times, x_upper, linestyle="dashed")
+            ax.plot(times, x_lower, linestyle="dashed")
+            plt.xlabel("Time Step")
+            plt.ylabel("Value (# of cars)")
+            plt.title("Cell {} Density vs. X Upper/Lower".format(desired_cell + 1))
+            ax.legend(['density', 'x_upper', 'x_lower'])
 
         # plot onramp control per time step
         fig, ax = plt.subplots()

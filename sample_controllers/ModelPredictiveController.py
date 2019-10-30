@@ -167,7 +167,7 @@ class MPC(Controller):
     def plot_results(self, x, f, u):
         # FOR DEBUGGING
         desired_cell = 0
-        for desired_cell in range(5):
+        for desired_cell in range(self.num_cells):
             supplys = []
             demands = []
             flows = []
