@@ -1,5 +1,6 @@
 # public libraries
 import numpy as np
+import matplotlib.pyplot as plt
 
 # our libraries
 from components.simulator import Simulator
@@ -18,8 +19,8 @@ n = 5
 h = 1/120
 
 # congestion density values per cell
-x_upper_list = [100, 100, 100, 100, 100]
-x_lower_list = [60, 60, 60, 60, 60]
+x_upper_list = [100, 100, 100, 100, 120]
+x_lower_list = [60, 60, 60, 60, 80]
 
 # supply/demand parameters per cell
 w_list = [-20, -20, -20, -20, -20]
@@ -35,7 +36,7 @@ beta_list = [0.75, 0.75, 0.75, 0.75, 1]
 onramp_flow_list = [30, 0, 40, 60, 0]
 
 # start parameters (optional)
-start_list = None #[200, 200, 200, 200, 200] #None #[2, 4, 6]
+start_list = [200, 200, 200, 200, 200] #None #[2, 4, 6]
 onramp_start_list = None # [1, 2, 3]
 
 # inputs
@@ -45,28 +46,11 @@ expected_u = np.array([[40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 
                        [40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40],
                        [40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40]])
 
-actual_u = np.array([[40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40],
-                     [40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80],
-                     [40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80]])
+actual_u = np.array([[80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80],
+                     [80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80],
+                     [80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80]])
 
-#actual_u = np.hstack((actual_u, actual_u))
-
-
-
-sim_obj = Simulator(total_time=total_time,
-                    time_step=time_step,
-                    n=n,
-                    h=h,
-                    x_upper_list=x_upper_list,
-                    x_lower_list=x_lower_list,
-                    w_list=w_list,
-                    x_jam_list=x_jam_list,
-                    v_list=v_list,
-                    beta_list=beta_list,
-                    onramp_flow_list=onramp_flow_list,
-                    start_list=start_list,
-                    onramp_start_list=onramp_start_list,
-                    input_array=actual_u)
+actual_u = np.hstack((actual_u, actual_u))
 
 mpcontroller = MPC(h=h,
                    w_list=w_list,
@@ -74,8 +58,9 @@ mpcontroller = MPC(h=h,
                    v_list=v_list,
                    beta_list=beta_list,
                    onramp_flow_list=onramp_flow_list,
-                   input_array=expected_u,
+                   input_array=actual_u,
                    modeling_horizon=51)
+
 
 smpcontroller = SMPC(h=h,
                      x_upper_list=x_upper_list,
@@ -85,11 +70,47 @@ smpcontroller = SMPC(h=h,
                      v_list=v_list,
                      beta_list=beta_list,
                      onramp_flow_list=onramp_flow_list,
-                     input_array=expected_u,
+                     input_array=actual_u,
                      modeling_horizon=51)
 
-#print(mpcontroller.compute_next_command(21, [50, 0, 0, 20, 0, 20, 20, 0, 0, 0, 0, 0, 0, 0, 0], False))
+controllers = [None, mpcontroller, smpcontroller]
 
-#sim_obj.run()
-#sim_obj.run(controller=mpcontroller)
-sim_obj.run(controller=smpcontroller)
+times = [t for t in range(0, len(actual_u[0]))]
+
+cars_exiting = []
+for c in controllers:
+    sim_obj = Simulator(total_time=total_time,
+                        time_step=time_step,
+                        n=n,
+                        h=h,
+                        x_upper_list=x_upper_list,
+                        x_lower_list=x_lower_list,
+                        w_list=w_list,
+                        x_jam_list=x_jam_list,
+                        v_list=v_list,
+                        beta_list=beta_list,
+                        onramp_flow_list=onramp_flow_list,
+                        start_list=start_list,
+                        onramp_start_list=onramp_start_list,
+                        input_array=actual_u)
+    sim_obj.run(controller=c, plot_results=True)
+    cars_exiting.append(sim_obj.get_cars_exited_per_timestep())
+
+
+fig, ax = plt.subplots()
+plt.xlabel("Time Step")
+plt.ylabel("Number of Cars Exited")
+plt.title("Number of Cars Exiting Network Per Timestep")
+[ax.plot(times, c) for c in cars_exiting]
+ax.legend(['no control', 'mpc', 'smpc'])
+
+print("SUMMARY")
+print("NONE: {}".format(sum(cars_exiting[0])))
+print("MPC:  {}".format(sum(cars_exiting[1])))
+print("SMPC: {}".format(sum(cars_exiting[2])))
+plt.show()
+
+
+
+
+
