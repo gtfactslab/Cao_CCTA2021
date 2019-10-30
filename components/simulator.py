@@ -163,7 +163,7 @@ class Simulator():
         return self.state
 
     # runs simulation based on current parameters
-    def run(self, u=None, controller=None, debug=False):
+    def run(self, u=None, controller=None, plot_results=False, debug=False):
         if bool(u):
             if u.shape[0] != self.n:
                 if u.shape[0] != self.num_onramps:
@@ -176,11 +176,17 @@ class Simulator():
             return 0
 
         cars_exited_network = 0
+        self.cars_exited_per_timestep = []
 
         start = time()
 
         results = []
+        results.append(self.state) # append initial state
         for t in range(0, len(self.u[0])):
+            prev_cars = cars_exited_network
+            if debug:
+                print(self.state)
+
             # each time step of the simulation is run in two (or three) stages
             # if a controller is provided, call the appropriate method and calculate control inputs
             if controller is not None:
@@ -195,6 +201,8 @@ class Simulator():
                                                       float(control_commands[c - 1]) if controller is not None else None)
                 cars_exited_network += self.cell_dict[c].cars_leaving_network(self.h)
 
+            diff = cars_exited_network - prev_cars
+
             # then, update densities for each cell
             for c in self.cell_dict:
                 self.cell_dict[c].update()
@@ -205,28 +213,58 @@ class Simulator():
             # Save state
             results.append(self.state)
 
+            # Record stats
+            self.cars_exited_per_timestep.append(diff)
+
         print("Simulation complete in {} seconds.".format(time()-start))
         print("{} cars were able to exit the network during the simulation.".format(cars_exited_network))
 
         results = np.array(results)
-        if debug: print(results)
-        self.plot_results(results)
+        if plot_results:
+            print(results)
+            self.plot_cars_exited_per_timestep()
+            self.plot_results(results, line=True)
+
         return results
 
-    def plot_results(self, results):
+    def plot_results(self, results, line=False):
         print("Plotting Results...")
-        # plot cell density per time step
-        fig, ax = plt.subplots()
-        cax = ax.matshow(np.flipud(results[:, self.num_cells:2*self.num_cells].transpose()), aspect="auto")
-        fig.colorbar(cax)
-        plt.xlabel("Time Step")
-        plt.ylabel("Cell")
-        plt.title("Cell Density")
+        if not line:
+            # plot cell density per time step
+            fig, ax = plt.subplots()
+            cax = ax.matshow(np.flipud(results[:, self.num_cells:2*self.num_cells].transpose()), aspect="auto")
+            fig.colorbar(cax)
+            plt.xlabel("Time Step")
+            plt.ylabel("Cell")
+            plt.title("Cell Density")
 
-        cell_ticks = ['']
-        [cell_ticks.append(str(self.num_cells - i)) for i in range(0, self.num_cells)]
-        ax.set_yticklabels(cell_ticks)
-        ax.tick_params(axis='x', bottom=True, top=False, labelbottom=True, labeltop=False)
+            cell_ticks = ['']
+            [cell_ticks.append(str(self.num_cells - i)) for i in range(0, self.num_cells)]
+            ax.set_yticklabels(cell_ticks)
+            ax.tick_params(axis='x', bottom=True, top=False, labelbottom=True, labeltop=False)
+        else:
+            all_densities = results[:, self.num_cells:2*self.num_cells].transpose()
+            for cell in range(0, self.num_cells):
+                densities = []
+                times = []
+                x_ups = []
+                x_lows = []
+                for t in range(len(self.u[0])):
+                    densities.append(all_densities[cell, t])
+                    times.append(t)
+                    x_ups.append(self.cell_dict[cell + 1].x_upper)
+                    x_lows.append(self.cell_dict[cell + 1].x_lower)
+
+                fig, ax = plt.subplots()
+                ax.scatter(times, densities)
+                ax.plot(times, x_ups, linestyle="dashed")
+                ax.plot(times, x_lows, linestyle="dashed")
+                plt.xlabel("Time Step")
+                plt.ylabel("Value (# of cars)")
+                plt.title("Cell {} Density Over Time".format(cell + 1))
+                ax.legend(['x_upper', 'x_lower', 'density'])
+
+
 
         # plot onramp density per time step
         fig, ax = plt.subplots()
@@ -267,3 +305,17 @@ class Simulator():
         ax.tick_params(axis='x', bottom=True, top=False, labelbottom=True, labeltop=False)
 
         plt.show()
+
+    def plot_cars_exited_per_timestep(self):
+        times = [t for t in range(0, len(self.u[0]))]
+
+        fig, ax = plt.subplots()
+        ax.plot(times, self.cars_exited_per_timestep)
+        plt.xlabel("Time Step")
+        plt.ylabel("Number of Cars Exited")
+        plt.title("Number of Cars Exiting Network Per Time Step")
+
+        plt.show()
+
+    def get_cars_exited_per_timestep(self):
+        return self.cars_exited_per_timestep
