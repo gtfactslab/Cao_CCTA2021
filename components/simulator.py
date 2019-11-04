@@ -256,9 +256,9 @@ class Simulator():
                     x_lows.append(self.cell_dict[cell + 1].x_lower)
 
                 fig, ax = plt.subplots()
-                ax.scatter(times, densities)
                 ax.plot(times, x_ups, linestyle="dashed")
                 ax.plot(times, x_lows, linestyle="dashed")
+                ax.scatter(times, densities)
                 plt.xlabel("Time Step")
                 plt.ylabel("Value (# of cars)")
                 plt.title("Cell {} Density Over Time".format(cell + 1))
