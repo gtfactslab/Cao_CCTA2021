@@ -20,9 +20,9 @@ class SMPC(Controller):
         self.x_upper_list = x_upper_list
         self.x_lower_list = x_lower_list
         # misc params for what actual sim will aim for
-        self.up_buffer = 10
+        self.up_buffer = 0
         # 6 seems to work well for upper
-        self.low_buffer = 10
+        self.low_buffer = 0
         # 5 seems to work well for lower
         # setting both to 10 seems safe
         # TODO: make this more formal
@@ -139,8 +139,7 @@ class SMPC(Controller):
 
             if c > 0:
                 w = (self.v_list[c-1] * new_x_critical) / (new_x_critical - float(self.x_jam_list[c]))
-                # TODO: currently calculate based on crossover between demand of previous cell and supply of this cell
-                # used to have both be this cell, which is correct?
+                # calculate based on crossover between demand of previous cell and supply of this cell
             else:
                 w = 0 # first cell never calculate supply so this w value is pointless
             self.new_w_list.append(w)
@@ -181,11 +180,12 @@ class SMPC(Controller):
             constraints += [f[-self.num_onramps:, k] <= x[-self.num_onramps:, k]]  # must also be lower than current density of onramp
 
             # for cells
-            constraints += [f[:-self.num_onramps, k] <= x[:-self.num_onramps, k] @ self.v_matrix,
-                            f[:-(self.num_onramps + 1), k] <= x[1:-self.num_onramps, k] @ self.w_matrix + np.squeeze(self.supply_b_list[1:])]
+            constraints += [f[:-self.num_onramps, k] <= x[:-self.num_onramps, k] @ self.v_matrix]
+            constraints += [f[:-(self.num_onramps + 1), k] <= x[1:-self.num_onramps, k] @ self.w_matrix + np.squeeze(self.supply_b_list[1:])]
 
         # impose non-negative constraint on x and flow, as a check
         constraints += [x >= 0, f >= 0, u >= 0]
+
         # onramp cannot output more cars than maximum flow rate
         constraints += [u <= 1]
 
