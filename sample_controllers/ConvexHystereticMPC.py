@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from components.controller import Controller
 
 
-class TMPC(Controller):
+class CHMPC(Controller):
     def __init__(self, h, x_upper_list, x_lower_list, w_list, x_jam_list, v_list, beta_list, onramp_flow_list, input_array, modeling_horizon=11):
         # Init using params from simulation
         error = False #TODO: Put in checks for inputs
@@ -144,7 +144,7 @@ class TMPC(Controller):
         # congestion variables
         above_x_upper = Variable((self.num_flows, self.N))
         below_x_lower = Variable((self.num_flows, self.N))
-        congested = Variable((self.num_cells, self.N+1), boolean=True) #initial congestion state is used as "previous" calculation for first time step
+        congested = Variable((self.num_cells, self.N+1)) #initial congestion state is used as "previous" calculation for first time step
 
         # set up constraints
         x_init = Parameter(self.num_flows)
@@ -192,7 +192,7 @@ class TMPC(Controller):
 
                 if c > 0:
                     # apply new supply constraint to previous cell
-                    constraints += [f[c-1, k] <= x[c, k] * self.w_list[c] + self.supply_b_list[c]]
+                    constraints += [f[c-1, k] <= x[c, k] * self.w_list[c] + self.supply_b_list[c] + congested[c, k+1]*10000]
 
 
         # impose non-negative constraint on x and flow, as a check
@@ -202,7 +202,9 @@ class TMPC(Controller):
         constraints += [u <= 1]
 
         #congestion state must stay between 0 and 1
-        # constraints += [congested >= 0, congested <= 1]
+        constraints += [congested >= 0, congested <= 1]
+        constraints += [above_x_upper >= -100, above_x_upper <= 100]
+        constraints += [below_x_lower >= -100, below_x_lower <= 100]
 
         prob = Problem(Minimize(objective), constraints)
         prob.solve(verbose=True, solver=GUROBI)
