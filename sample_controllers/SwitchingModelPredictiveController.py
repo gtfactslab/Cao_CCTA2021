@@ -20,9 +20,9 @@ class SMPC(Controller):
         self.x_upper_list = x_upper_list
         self.x_lower_list = x_lower_list
         # misc params for what actual sim will aim for
-        self.up_buffer = 0
+        self.up_buffer = 10
         # 6 seems to work well for upper
-        self.low_buffer = 0
+        self.low_buffer = 15
         # 5 seems to work well for lower
         # setting both to 10 seems safe
         # TODO: make this more formal
