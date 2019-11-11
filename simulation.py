@@ -38,7 +38,7 @@ beta_list = [0.75, 0.75, 0.75, 0.75, 1]
 onramp_flow_list = [60, 0, 40, 60, 0]
 
 # start parameters (optional)
-start_list = [0, 0, 0, 0, 0] #None #[2, 4, 6]
+start_list = [120, 120, 120, 120, 120] #None #[2, 4, 6]
 onramp_start_list = None # [1, 2, 3]
 
 # inputs
@@ -100,7 +100,7 @@ controllers = [("None", None),
                ("MPC", mpcontroller),
                ("SMPC", smpcontroller),
                ("SMPC2", smpcontroller2)]
-controllers = [ ("hcc", hcc)]
+controllers = [("hcc", hcc)]
 
 times = [t for t in range(0, len(actual_u[0]))]
 

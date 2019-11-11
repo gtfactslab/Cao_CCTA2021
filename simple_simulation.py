@@ -41,8 +41,8 @@ onramp_flow_list = [80, 40, 0]
 #onramp_flow_list = [80, 40, 0] increase flow to ramp 1 to act as supply
 
 # start parameters (optional)
-#start_list = [0, 150, 150] # start congested
-start_list = [0, 0, 0] # start empty
+start_list = [0, 150, 150] # start congested
+#start_list = [0, 0, 0] # start empty
 
 onramp_start_list = None # [1, 2, 3]
 
@@ -52,7 +52,7 @@ onramp_start_list = None # [1, 2, 3]
 expected_u = np.array([[80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80],
                        [80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80]])
 
-#expected_u = np.hstack((expected_u, expected_u)) # extend time
+expected_u = np.hstack((expected_u, expected_u)) # extend time
 
 
 mpcontroller = MPC(h=h,
@@ -123,7 +123,7 @@ controllers = [("None", None),
                ("MPC", mpcontroller),
                ("SMPC", smpcontroller),
                ("SMPC2", smpcontroller2)]
-controllers = [ ("hcc", hcc)]
+controllers = [("hcc", hcc)]
 
 times = [t for t in range(0, len(expected_u[0]))]
 

@@ -18,7 +18,7 @@ class HCC(Controller):
         # misc params for what actual sim will aim for
         self.up_buffer = 1
         # 6 seems to work well for upper
-        self.low_buffer = 10
+        self.low_buffer = 1
         # 5 seems to work well for lower
         # setting both to 10 seems safe
         # TODO: make this more formal
@@ -95,25 +95,65 @@ class HCC(Controller):
 
         #print(next_cell_state)
 
-        # 2) calculate goal densities based on congestion states
-        goal_densities = []
-        downstream_congested = True  # end cell should be x_upper
+        # 2) calculate ideal goal densities
+        ideal_densities = []
+        cell_type = "A"
+        next_cell_type = None
         for c in range(self.num_cells - 1, -1, -1):
-            if downstream_congested:
-                # if downstream would be congested at goal density, then get current cell at highest allowed density without becoming congested (flow is already limited by supply)
-                goal_x = self.x_upper_list[c] - self.up_buffer
-            else:
-                # if downstream wouldn't be congested, then calculate what the ideal density for this cell would be to keep downstream at that density
-                goal_x = (self.v_list[c + 1] / (self.beta_list[c] * self.v_list[c])) * goal_densities[0]
+            if cell_type == "A":
+                ideal_x = self.x_upper_list[c] - self.up_buffer
+                next_cell_type = "B"
+            elif cell_type == "B":
+                ideal_x = (self.v_list[c + 1] / (self.beta_list[c] * self.v_list[c])) * ideal_densities[0]
+                if ideal_x >= self.x_upper_list[c]:
+                    next_cell_type = "C"
+                else:
+                    next_cell_type = "B"
+            elif cell_type == "C":
+                ideal_x = self.x_upper_list[c] - self.up_buffer
+                next_cell_type = "D"
+            elif cell_type == "D":
+                ideal_x = (self.w_list[c + 2] * (ideal_densities[1] - self.x_jam_list[c + 2]))/(self.beta_list[c] * self.v_list[c])
+                if ideal_x >= self.x_upper_list[c]:
+                    next_cell_type = "C"
+                else:
+                    next_cell_type = "B"
 
-            goal_densities.insert(0, goal_x)
 
-            downstream_congested = goal_x >= self.x_upper_list[c]
+            ideal_densities.insert(0, ideal_x)
 
-        print(goal_densities)
+            cell_type = next_cell_type
+
+        print(ideal_densities)
+
+        # 3) calculate goal densities based on congestion state
+        goal_densities = ideal_densities
+        congested_cell = None
+        for c in range(self.num_cells - 1, 0, -1): # we don't care if the first cell is congested, there's no inflow limitation
+            ideal = ideal_densities[c]
+            if congestion_state[c] == 1:
+                # if congested, check to see if we care
+                if ideal <= self.x_upper_list[c]:
+                    # if this cell isn't meant to be congested, we might care
+                    # check to see if this cell being congested affects previous cell
+                    w = self.w_list[c]
+                    xj = self.x_jam_list[c]
+                    v_prev = self.v_list[c-1]
+
+                    x_crossover = (-1 * w * xj) / (v_prev - w)
+                    print(x_crossover)
+                    if ideal_densities[c-1] >= x_crossover:
+                        # if the previous cell is affected, now we care and calculate new densities for all preceding cells
+                        # these densities can be overwritten if there is another congested cell further up the chain
+                        congested_cell = c
+                        goal_densities[congested_cell] = self.x_lower_list[congested_cell] - self.low_buffer
+                        for c in range(congested_cell - 1, -1, -1):
+                            goal_densities[c] = (self.v_list[c + 1] * goal_densities[c + 1]) / (
+                                        self.beta_list[c] * self.v_list[c])
 
 
-        # 3) calculate number of cars to insert from onramps to get cell states to desired density
+
+        # 4) calculate number of cars to insert from onramps to get cell states to desired density
         u = []
         for i, c in enumerate(self.cells_with_onramps):
             # UNCOMMENT BELOW TO SET GOALS BASED ON END CELL
