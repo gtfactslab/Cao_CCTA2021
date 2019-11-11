@@ -221,7 +221,7 @@ class Simulator():
 
         results = np.array(results)
         if plot_results:
-            print(results)
+            #print(results)
             self.plot_cars_exited_per_timestep()
             self.plot_results(results, line=True)
 

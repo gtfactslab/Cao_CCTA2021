@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 from components.simulator import Simulator
 from sample_controllers.ModelPredictiveController import MPC
 from sample_controllers.SwitchingModelPredictiveController import SMPC
+from sample_controllers.SwitchingMPC2 import SMPC2
+from sample_controllers.HardCodedController import HCC
 
 # time parameters (not used in calculations)
 total_time = 3600
@@ -33,10 +35,10 @@ beta_list = [0.75, 0.75, 0.75, 0.75, 1]
 # onramp parameters
 # max flow per onramp
 # if no onramp attached to cell, set flow to 0
-onramp_flow_list = [30, 0, 40, 60, 0]
+onramp_flow_list = [60, 0, 40, 60, 0]
 
 # start parameters (optional)
-start_list = [200, 200, 200, 200, 200] #None #[2, 4, 6]
+start_list = [0, 0, 0, 0, 0] #None #[2, 4, 6]
 onramp_start_list = None # [1, 2, 3]
 
 # inputs
@@ -73,12 +75,39 @@ smpcontroller = SMPC(h=h,
                      input_array=actual_u,
                      modeling_horizon=51)
 
-controllers = [None, mpcontroller, smpcontroller]
+smpcontroller2 = SMPC2(h=h,
+                     x_upper_list=x_upper_list,
+                     x_lower_list=x_lower_list,
+                     w_list=w_list,
+                     x_jam_list=x_jam_list,
+                     v_list=v_list,
+                     beta_list=beta_list,
+                     onramp_flow_list=onramp_flow_list,
+                     input_array=actual_u,
+                     modeling_horizon=51)
+
+hcc = HCC(h=h,
+                     x_upper_list=x_upper_list,
+                     x_lower_list=x_lower_list,
+                     w_list=w_list,
+                     x_jam_list=x_jam_list,
+                     v_list=v_list,
+                     beta_list=beta_list,
+                     onramp_flow_list=onramp_flow_list,
+                     input_array=actual_u)
+
+controllers = [("None", None),
+               ("MPC", mpcontroller),
+               ("SMPC", smpcontroller),
+               ("SMPC2", smpcontroller2)]
+controllers = [ ("hcc", hcc)]
 
 times = [t for t in range(0, len(actual_u[0]))]
 
 cars_exiting = []
-for c in controllers:
+controllers_run = []
+for (name, c) in controllers:
+    controllers_run.append(name)
     sim_obj = Simulator(total_time=total_time,
                         time_step=time_step,
                         n=n,
@@ -93,7 +122,7 @@ for c in controllers:
                         start_list=start_list,
                         onramp_start_list=onramp_start_list,
                         input_array=actual_u)
-    sim_obj.run(controller=c, plot_results=True)
+    sim_obj.run(controller=c, plot_results=True, debug=False)
     cars_exiting.append(sim_obj.get_cars_exited_per_timestep())
 
 
@@ -102,12 +131,11 @@ plt.xlabel("Time Step")
 plt.ylabel("Number of Cars Exited")
 plt.title("Number of Cars Exiting Network Per Timestep")
 [ax.plot(times, c) for c in cars_exiting]
-ax.legend(['no control', 'mpc', 'smpc'])
+ax.legend(controllers_run)
 
 print("SUMMARY")
-print("NONE: {}".format(sum(cars_exiting[0])))
-print("MPC:  {}".format(sum(cars_exiting[1])))
-print("SMPC: {}".format(sum(cars_exiting[2])))
+[print("{}:\t{}".format(controllers_run[i], sum(cars_exiting[i]))) for i in range(len(controllers_run))]
+
 plt.show()
 
 
