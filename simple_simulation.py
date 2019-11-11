@@ -37,7 +37,7 @@ beta_list = [0.75, 0.75, 1]
 # onramp parameters
 # max flow per onramp
 # if no onramp attached to cell, set flow to 0
-onramp_flow_list = [80, 40, 0]
+onramp_flow_list = [40, 40, 0]
 #onramp_flow_list = [80, 40, 0] increase flow to ramp 1 to act as supply
 
 # start parameters (optional)
@@ -123,7 +123,11 @@ controllers = [("None", None),
                ("MPC", mpcontroller),
                ("SMPC", smpcontroller),
                ("SMPC2", smpcontroller2)]
-controllers = [("hcc", hcc)]
+controllers = [("None", None),
+               ("hcc", hcc),
+               ("MPC", mpcontroller),
+               ("SMPC", smpcontroller)
+               ]
 
 times = [t for t in range(0, len(expected_u[0]))]
 
