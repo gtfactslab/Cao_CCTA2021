@@ -97,27 +97,29 @@ class HCC(Controller):
 
         # 2) calculate ideal goal densities
         ideal_densities = []
-        cell_type = "A"
+        cell_types = []
+        cell_type = 'A'
         next_cell_type = None
         for c in range(self.num_cells - 1, -1, -1):
-            if cell_type == "A":
+            cell_types.insert(0, cell_type)
+            if cell_type == 'A':
                 ideal_x = self.x_upper_list[c] - self.up_buffer
-                next_cell_type = "B"
-            elif cell_type == "B":
+                next_cell_type = 'B'
+            elif cell_type == 'B':
                 ideal_x = (self.v_list[c + 1] / (self.beta_list[c] * self.v_list[c])) * ideal_densities[0]
                 if ideal_x >= self.x_upper_list[c]:
-                    next_cell_type = "C"
+                    next_cell_type = 'C'
                 else:
-                    next_cell_type = "B"
-            elif cell_type == "C":
+                    next_cell_type = 'B'
+            elif cell_type == 'C':
                 ideal_x = self.x_upper_list[c] - self.up_buffer
-                next_cell_type = "D"
-            elif cell_type == "D":
+                next_cell_type = 'D'
+            elif cell_type == 'D':
                 ideal_x = (self.w_list[c + 2] * (ideal_densities[1] - self.x_jam_list[c + 2]))/(self.beta_list[c] * self.v_list[c])
                 if ideal_x >= self.x_upper_list[c]:
-                    next_cell_type = "C"
+                    next_cell_type = 'C'
                 else:
-                    next_cell_type = "B"
+                    next_cell_type = 'B'
 
 
             ideal_densities.insert(0, ideal_x)
@@ -129,6 +131,7 @@ class HCC(Controller):
         # 3) calculate goal densities based on congestion state
         goal_densities = ideal_densities
         congested_cell = None
+        congested_care = []
         for c in range(self.num_cells - 1, 0, -1): # we don't care if the first cell is congested, there's no inflow limitation
             ideal = ideal_densities[c]
             if congestion_state[c] == 1:
@@ -146,10 +149,11 @@ class HCC(Controller):
                         # if the previous cell is affected, now we care and calculate new densities for all preceding cells
                         # these densities can be overwritten if there is another congested cell further up the chain
                         congested_cell = c
+                        congested_care.append(c)
                         goal_densities[congested_cell] = self.x_lower_list[congested_cell] - self.low_buffer
-                        for c in range(congested_cell - 1, -1, -1):
-                            goal_densities[c] = (self.v_list[c + 1] * goal_densities[c + 1]) / (
-                                        self.beta_list[c] * self.v_list[c])
+                        for nc in range(congested_cell - 1, -1, -1):
+                            goal_densities[nc] = (self.v_list[nc + 1] * goal_densities[nc + 1]) / (
+                                        self.beta_list[nc] * self.v_list[nc])
 
 
 
@@ -173,9 +177,14 @@ class HCC(Controller):
             goal_x = goal_densities[c]
             # END
 
-            car_diff = max(goal_x - next_cell_state[c], 0)
+            car_diff = goal_x - next_cell_state[c]
+            # print(cell_types)
+            # if cell is feeding into a cell whose outflow is limited by supply, that cell can be fed up to its x_upper
+            if cell_types[c] == 'D' and c not in congested_care:
+                gap = max(goal_densities[c + 1] - next_cell_state[c + 1], 0)
+                car_diff = min(car_diff + (gap/self.beta_list[c]), self.x_upper_list[c] - self.up_buffer - next_cell_state[c])
 
-            command = min(car_diff / self.onramp_flow_list[c], 1.0)
+            command = min(max(car_diff, 0) / self.onramp_flow_list[c], 1.0)
 
             if type(command) is np.ndarray:
                 command = command[0]
