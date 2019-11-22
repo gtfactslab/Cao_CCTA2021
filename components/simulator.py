@@ -183,6 +183,7 @@ class Simulator():
         results = []
         results.append(self.state) # append initial state
         for t in range(0, len(self.u[0])):
+            print("Calculating Time Step {}".format(t))
             prev_cars = cars_exited_network
             if debug:
                 print(self.state)
