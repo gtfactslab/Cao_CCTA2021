@@ -142,8 +142,8 @@ class CHMPC(Controller):
         u = Variable((self.num_onramps, self.N))  # u represents ratio of onramp max flow to let through
 
         # congestion variables
-        above_x_upper = Variable((self.num_flows, self.N))
-        below_x_lower = Variable((self.num_flows, self.N))
+        above_x_upper = Variable((self.num_cells, self.N))
+        below_x_lower = Variable((self.num_cells, self.N))
         congested = Variable((self.num_cells, self.N+1)) #initial congestion state is used as "previous" calculation for first time step
 
         # set up constraints
