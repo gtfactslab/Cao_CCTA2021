@@ -10,6 +10,7 @@ from sample_controllers.SwitchingMPC2 import SMPC2
 from sample_controllers.ConvexHystereticMPC import CHMPC
 from sample_controllers.NaiveHighMPC import NHMPC
 from sample_controllers.HardCodedController import HCC
+from sample_controllers.GurobiCDMPC import GCDMPC
 
 # time parameters (not used in calculations)
 total_time = 3600
@@ -54,6 +55,10 @@ expected_u = np.array([[80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 
 
 expected_u = np.hstack((expected_u, expected_u)) # extend time
 
+
+small_u = np.array([[80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80],
+                    [80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80]])
+expected_u = small_u
 
 mpcontroller = MPC(h=h,
                    w_list=w_list,
@@ -119,14 +124,22 @@ hcc = HCC(h=h,
                      onramp_flow_list=onramp_flow_list,
                      input_array=expected_u)
 
+gcdmpcontroller = GCDMPC(h=h,
+                     x_upper_list=x_upper_list,
+                     x_lower_list=x_lower_list,
+                     w_list=w_list,
+                     x_jam_list=x_jam_list,
+                     v_list=v_list,
+                     beta_list=beta_list,
+                     onramp_flow_list=onramp_flow_list,
+                     input_array=expected_u,
+                     modeling_horizon=16)
+
 controllers = [("None", None),
                ("MPC", mpcontroller),
                ("SMPC", smpcontroller),
                ("SMPC2", smpcontroller2)]
-controllers = [("None", None),
-               ("hcc", hcc),
-               ("MPC", mpcontroller),
-               ("SMPC", smpcontroller)
+controllers = [("GCDMPC",gcdmpcontroller )
                ]
 
 times = [t for t in range(0, len(expected_u[0]))]
@@ -149,7 +162,7 @@ for (name, c) in controllers:
                         start_list=start_list,
                         onramp_start_list=onramp_start_list,
                         input_array=expected_u)
-    sim_obj.run(controller=c, plot_results=True, debug=False)
+    sim_obj.run(controller=c, plot_results=True, debug=True)
     cars_exiting.append(sim_obj.get_cars_exited_per_timestep())
 
 
