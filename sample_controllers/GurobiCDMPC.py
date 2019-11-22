@@ -30,6 +30,9 @@ class GCDMPC(Controller):
         self.x_upper_list = x_upper_list
         self.x_lower_list = x_lower_list
 
+        self.x_upper_goal = [u - 1 for u in self.x_upper_list]
+        self.x_lower_goal = [l - 1 for l in self.x_lower_list]
+
         # onramp max flows
         self.onramp_flow_list = onramp_flow_list
         self.onramp_flows = []
@@ -110,6 +113,10 @@ class GCDMPC(Controller):
 
 
     def compute_next_command(self, timestep, state, debug=False):
+        #TODO: probably make supply and demand variables so that you can call min_ on them
+        #TODO: Check congestion logic
+        #TODO: after a few steps model becomes infeasible, appears to be related to the -1 at x_upper_goal
+
         onramp_state = state[0:self.num_cells]
         onramp_state = [onramp_state[c] for c in self.cells_with_onramps]
         cell_state = state[self.num_cells:2*self.num_cells]
@@ -128,23 +135,25 @@ class GCDMPC(Controller):
         u = m.addVars(self.num_onramps, self.N, vtype=GRB.BINARY, name="U")  # u represents ratio of onramp max flow to let through
 
         # congestion variables
-        above_x_upper = m.addVars(self.num_cells, self.N, name="A")
-        below_x_lower = m.addVars(self.num_cells, self.N, name="B")
-        above_indicator = m.addVars(self.num_cells, self.N, name="AI")
-        below_indicator = m.addVars(self.num_cells, self.N, name="BI")
+        above_x_upper = m.addVars(self.num_cells, self.N, lb=-GRB.INFINITY, name="A")
+        below_x_lower = m.addVars(self.num_cells, self.N, lb=-GRB.INFINITY, name="B")
+        above_indicator = m.addVars(self.num_cells, self.N, lb=-GRB.INFINITY, name="AI")
+        below_indicator = m.addVars(self.num_cells, self.N, lb=-GRB.INFINITY, name="BI")
         above_indicator_end = m.addVars(self.num_cells, self.N, name="AIE", vtype=GRB.BINARY)
         below_indicator_end = m.addVars(self.num_cells, self.N, name="BIE", vtype=GRB.BINARY)
         congested = m.addVars(self.num_cells, self.N + 1, vtype=GRB.BINARY, name="C") #congested is a binary variable stating whether the cell is congested
 
+        # some constants for min/max operations
         one = m.addVar(name="ONE")
         zero = m.addVar(name="ZERO")
+        m.addConstr(one == 1)
+        m.addConstr(zero == 0)
 
         # objective: minimize the sum of all cell/onramp densities over time
         m.setObjective(x.sum(), GRB.MINIMIZE)
         [m.addConstr(x[f, 0] == x0[f]) for f in range(self.num_flows)]
         [m.addConstr(congested[c, 0] == congestion_state[c]) for c in range(len(congestion_state))]
-        m.addConstr(one == 1)
-        m.addConstr(zero == 0)
+
 
         # iterate over time steps
         for k in range(self.N):
@@ -153,8 +162,8 @@ class GCDMPC(Controller):
             B = np.zeros(self.num_flows)
             if timestep + k < self.num_inputs_provided:
                 B[-self.num_onramps:] = self.input_array[:, timestep + k]
-
-            #[m.addConstr(x[c, k + 1] == x[c, k] + sum([self.A[c, b] * f[b, k] for b in range(self.num_flows)]) + B) for c in range(self.num_flows)]
+            else:
+                B[-self.num_onramps:] = self.input_array[:, -1] # for this case only we assume last input repeats forever
 
             # constraints for flow, demand & supply
             # for onramps
@@ -189,8 +198,8 @@ class GCDMPC(Controller):
                 m.addConstr(x[c, k+1] == x[c, k] - self.h * f[c, k] + onramp_flow + prev_flow)
 
                 # constraints for congestion
-                m.addConstr(above_x_upper[c, k] == x[c, k] - self.x_upper_list[c])
-                m.addConstr(below_x_lower[c, k] == self.x_lower_list[c] - x[c, k])
+                m.addConstr(above_x_upper[c, k] == x[c, k] - self.x_upper_goal[c])
+                m.addConstr(below_x_lower[c, k] == self.x_lower_goal[c] - x[c, k])
 
                 m.addConstr(above_indicator[c, k] == min_([above_x_upper[c, k], one]))
                 m.addConstr(below_indicator[c, k] == min_([below_x_lower[c, k], one]))
@@ -206,23 +215,50 @@ class GCDMPC(Controller):
                 # otherwise constrain by demand only
                 m.addConstr(f[c, k] <= x[c, k] * self.v_list[c])
                 if c < self.num_cells - 1:
-                    m.addGenConstrIndicator(congested[c, k + 1], True, f[c, k] <= x[c+1, k] * self.w_list[c+1] + self.supply_b_list[c+1])
+                    m.addGenConstrIndicator(congested[c + 1, k], True, f[c, k] <= x[c+1, k] * self.w_list[c+1] + self.supply_b_list[c+1])
 
 
 
 
 
         # impose non-negative constraint on x and flow, as a check
-        m.write("full_model.mps")
-        m.computeIIS()
-        m.write("model.ilp")
+        #m.write("full_model.mps")
+
         m.optimize()
+        if GRB.OPTIMAL == 3:
+            m.computeIIS()
+            m.write("model.ilp")
 
         if debug:
-            self.plot_results(x, f, u)
-        print(u[0, 0].x)
+            print("Plotting MPC Results:")
+            x_arr = []
+            f_arr = []
+            u_arr = []
 
-        return np.expand_dims(u.value[:, 0], axis=0).transpose() # return commands for all onramps
+            for c in range(self.num_flows):
+                x_line = []
+                f_line = []
+                u_line = []
+                for k in range(self.N):
+                    x_line.append(x[c, k].x)
+                    f_line.append(f[c, k].x)
+                    if c >= self.num_cells:
+                        u_line.append(u[c-self.num_cells, k].x)
+                if c >= self.num_cells:
+                    u_arr.append(u_line)
+
+                x_arr.append(x_line)
+                f_arr.append(f_line)
+
+            x_arr = np.array(x_arr)
+            f_arr = np.array(f_arr)
+            u_arr = np.array(u_arr)
+
+            self.plot_results(x_arr, f_arr, u_arr)
+        #[print(u[c, 0].x) for c in range(self.num_onramps)]
+        output = [u[o, 0].x for o in range(self.num_onramps)]
+
+        return np.expand_dims(np.array(output), axis=0).transpose() # return commands for all onramps
 
     def plot_results(self, x, f, u):
         # FOR DEBUGGING
@@ -235,16 +271,16 @@ class GCDMPC(Controller):
             for t in range(self.N):
                 times.append(t)
 
-                demand = x.value[desired_cell, t] * self.v_list[desired_cell]
+                demand = x[desired_cell, t] * self.v_list[desired_cell]
                 demands.append(demand * self.h)
 
                 if desired_cell < self.num_cells - 1:
-                    supply = x.value[desired_cell + 1, t] * self.w_list[desired_cell + 1] + self.supply_b_list[desired_cell + 1]
+                    supply = x[desired_cell + 1, t] * self.w_list[desired_cell + 1] + self.supply_b_list[desired_cell + 1]
                 else:
                     supply = demand
                 supplys.append(supply * self.h)
 
-                flows.append(f.value[desired_cell, t] * self.h)
+                flows.append(f[desired_cell, t] * self.h)
 
             fig, ax = plt.subplots()
             ax.plot(times, supplys, linestyle="dotted")
@@ -260,7 +296,7 @@ class GCDMPC(Controller):
         for i in range(self.num_onramps):
             u_list = []
             for t in times:
-                u_list.append(u.value[i, t])
+                u_list.append(u[i, t])
             ax.plot(times, u_list)
         plt.xlabel("Time Step")
         plt.ylabel("Onramp Control Signal")
@@ -269,7 +305,7 @@ class GCDMPC(Controller):
 
         # plot cell density per time step
         fig, ax = plt.subplots()
-        cax = ax.matshow(np.flipud(x.value[:-self.num_onramps, :]), aspect="auto")
+        cax = ax.matshow(np.flipud(x[:-self.num_onramps, :]), aspect="auto")
         fig.colorbar(cax)
         plt.xlabel("Time Step")
         plt.ylabel("Cell")
@@ -281,7 +317,7 @@ class GCDMPC(Controller):
         ax.tick_params(axis='x', bottom=True, top=False, labelbottom=True, labeltop=False)
 
         fig, ax = plt.subplots()
-        cax = ax.matshow(x.value[-self.num_onramps:, :], aspect="auto")
+        cax = ax.matshow(x[-self.num_onramps:, :], aspect="auto")
         fig.colorbar(cax)
         plt.xlabel("Time Step")
         plt.ylabel("On Ramp")
