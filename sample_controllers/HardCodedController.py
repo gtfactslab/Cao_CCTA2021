@@ -180,7 +180,7 @@ class HCC(Controller):
             car_diff = goal_x - next_cell_state[c]
             # print(cell_types)
             # if cell is feeding into a cell whose outflow is limited by supply, that cell can be fed up to its x_upper
-            if cell_types[c] == 'D' and c not in congested_care:
+            if cell_types[c] == 'D' and c not in congested_care and c+1 not in self.cells_with_onramps:
                 gap = max(goal_densities[c + 1] - next_cell_state[c + 1], 0)
                 car_diff = min(car_diff + (gap/self.beta_list[c]), self.x_upper_list[c] - self.up_buffer - next_cell_state[c])
 
