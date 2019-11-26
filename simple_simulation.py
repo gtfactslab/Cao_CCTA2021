@@ -27,6 +27,9 @@ h = 1/120
 x_upper_list = [100, 100, 100]
 x_lower_list = [60, 60, 60]
 
+#x_upper_list = [80, 80, 80]
+#x_lower_list = [80, 80, 80]
+
 # supply/demand parameters per cell
 w_list = [-20, -20, -20]
 x_jam_list = [320, 320, 320]
@@ -56,9 +59,9 @@ expected_u = np.array([[80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 
 expected_u = np.hstack((expected_u, expected_u)) # extend time
 
 
-small_u = np.array([[80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80],
-                    [80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80]])
-expected_u = small_u
+#small_u = np.array([[80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80],
+#                    [80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80]])
+#expected_u = small_u
 
 mpcontroller = MPC(h=h,
                    w_list=w_list,
@@ -133,13 +136,14 @@ gcdmpcontroller = GCDMPC(h=h,
                      beta_list=beta_list,
                      onramp_flow_list=onramp_flow_list,
                      input_array=expected_u,
-                     modeling_horizon=16)
+                     modeling_horizon=16) # 16 if starting empty, 41 + cutoff early for congested
 
 controllers = [("None", None),
                ("MPC", mpcontroller),
                ("SMPC", smpcontroller),
                ("SMPC2", smpcontroller2)]
-controllers = [("GCDMPC",gcdmpcontroller )
+controllers = [("HCC", hcc),
+               ("GCDMPC",gcdmpcontroller)
                ]
 
 times = [t for t in range(0, len(expected_u[0]))]
