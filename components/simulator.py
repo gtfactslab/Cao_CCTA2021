@@ -2,6 +2,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from time import time
+import csv
 
 #our libraries
 from components.cell import Cell
@@ -163,7 +164,7 @@ class Simulator():
         return self.state
 
     # runs simulation based on current parameters
-    def run(self, u=None, controller=None, plot_results=False, debug=False):
+    def run(self, u=None, controller=None, plot_results=False, debug=False, output_csv=None):
         if bool(u):
             if u.shape[0] != self.n:
                 if u.shape[0] != self.num_onramps:
@@ -226,7 +227,31 @@ class Simulator():
             self.plot_cars_exited_per_timestep()
             self.plot_results(results, line=True)
 
+        if output_csv is not None:
+            self.write_results_to_csv(results, output_csv)
+
         return results
+
+    def write_results_to_csv(self, results, file_name):
+        header = ["timestep"] \
+                 + ["o{}_density".format(i) for i in range(1, self.num_cells + 1)] \
+                 + ["c{}_density".format(i) for i in range(1, self.num_cells + 1)] \
+                 + ["c{}_congested".format(i) for i in range(1, self.num_cells + 1)] \
+                 + ["cars_exited"]
+        #print(header)
+        with open(file_name, 'w') as results_csv:
+            results_writer = csv.writer(results_csv, delimiter=',')
+            results_writer.writerow(header)
+            for i, row in enumerate(results):
+                if i == 0:
+                    exited = 0
+                else:
+                    exited = self.cars_exited_per_timestep[i - 1]
+                csv_row = row.tolist()
+                csv_row.insert(0, i)
+                csv_row.append(exited)
+                results_writer.writerow(csv_row)
+        print("wrote results to {}".format(file_name))
 
     def plot_results(self, results, line=False):
         print("Plotting Results...")
