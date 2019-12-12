@@ -157,7 +157,7 @@ class MPC(Controller):
         constraints += [u <= 1]
 
         prob = Problem(Minimize(objective), constraints)
-        prob.solve(verbose=True)
+        prob.solve(verbose=True, solver=GUROBI)
 
         if debug:
             self.plot_results(x, f, u)
