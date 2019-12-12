@@ -8,6 +8,7 @@ from sample_controllers.ModelPredictiveController import MPC
 from sample_controllers.SwitchingModelPredictiveController import SMPC
 from sample_controllers.SwitchingMPC2 import SMPC2
 from sample_controllers.HardCodedController import HCC
+from sample_controllers.GurobiCDMPC import GCDMPC
 
 # time parameters (not used in calculations)
 total_time = 3600
@@ -103,13 +104,23 @@ hcc = HCC(h=h,
                      onramp_flow_list=onramp_flow_list,
                      input_array=actual_u)
 
+gcdmpcontroller = GCDMPC(h=h,
+                     x_upper_list=x_upper_list,
+                     x_lower_list=x_lower_list,
+                     w_list=w_list,
+                     x_jam_list=x_jam_list,
+                     v_list=v_list,
+                     beta_list=beta_list,
+                     onramp_flow_list=onramp_flow_list,
+                     input_array=actual_u,
+                     modeling_horizon=16)
+
 controllers = [("None", None),
                ("MPC", mpcontroller),
                ("SMPC", smpcontroller),
                ("hcc", hcc)]
 controllers = [("hcc", hcc),
-               ("MPC", mpcontroller),
-               ("SMPC", smpcontroller)]
+               ("GCDMPC",gcdmpcontroller)]
 
 
 times = [t for t in range(0, len(actual_u[0]))]
