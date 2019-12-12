@@ -1,6 +1,6 @@
 # public libraries
 import numpy as np
-import os, datetime
+import os, sys
 
 # our libraries
 from components.simulator import Simulator
@@ -95,7 +95,7 @@ times = [t for t in range(0, len(expected_u[0]))]
 
 cars_exiting = []
 controllers_run = []
-results_dir = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+results_dir = sys.argv[1]
 os.makedirs("results/{}".format(results_dir))
 for (name, c) in controllers:
     controllers_run.append(name)
