@@ -83,7 +83,8 @@ gcdmpcontroller = GCDMPC(h=h,
                      beta_list=beta_list,
                      onramp_flow_list=onramp_flow_list,
                      input_array=expected_u,
-                     modeling_horizon=41) # 16 if starting empty, 41 + cutoff early for congested
+                     modeling_horizon=41,
+                     time_limit=3600) # horizon 16 if starting empty, 41 + cutoff early for congested
 
 controllers = [("None", None),
                ("MPC", mpcontroller),

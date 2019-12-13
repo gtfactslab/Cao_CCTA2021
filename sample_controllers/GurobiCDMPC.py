@@ -9,7 +9,7 @@ from components.controller import Controller
 
 
 class GCDMPC(Controller):
-    def __init__(self, h, x_upper_list, x_lower_list, w_list, x_jam_list, v_list, beta_list, onramp_flow_list, input_array, modeling_horizon=11):
+    def __init__(self, h, x_upper_list, x_lower_list, w_list, x_jam_list, v_list, beta_list, onramp_flow_list, input_array, modeling_horizon=11, time_limit=None):
         # Init using params from simulation
         self.next_step_to_calculate = 0
         self.prev_checkpoint = 0
@@ -114,6 +114,9 @@ class GCDMPC(Controller):
             return None
 
         self.num_inputs_provided = self.input_array.shape[1]
+
+        # sets time limit (seconds) for optimization, will return best solution so far if exceeded
+        self.time_limit = time_limit
 
 
 
@@ -252,7 +255,9 @@ class GCDMPC(Controller):
                     #if c < self.num_cells - 1:
                     #    m.addGenConstrIndicator(congested[c + 1, k], True, f[c, k] <= x[c+1, k] * self.w_list[c+1] + self.supply_b_list[c+1])
 
-
+            if self.time_limit is not None:
+                m.Params.TIME_LIMIT = self.time_limit
+                
             m.optimize()
             if m.status == GRB.INFEASIBLE:
                 m.computeIIS()
