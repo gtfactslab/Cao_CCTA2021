@@ -237,7 +237,8 @@ class GCDMPC(Controller):
                     # constrain by supply and demand if next cell congested and not last cell
                     # otherwise constrain by demand only
                     m.addConstr(demand[c, k] == x[c, k] * self.v_list[c])
-                    m.addConstr(supply[c, k] == x[c, k] * self.w_list[c] + self.supply_b_list[c])
+                    # supply constraint must account for beta term as not all cars progress to next cell, this does not change the actual supply function
+                    m.addConstr(supply[c, k] == (x[c, k] * self.w_list[c] + self.supply_b_list[c])/self.beta_list[c])
 
                     m.addConstr(unrestricted_flow[c, k] == demand[c, k])
                     if c < self.num_cells - 1:
@@ -311,6 +312,7 @@ class GCDMPC(Controller):
         desired_cell = 0
         for desired_cell in range(self.num_cells):
             supplys = []
+            adj_supplys = []
             demands = []
             flows = []
             times = []
@@ -321,21 +323,26 @@ class GCDMPC(Controller):
                 demands.append(demand * self.h)
 
                 if desired_cell < self.num_cells - 1:
-                    supply = x[desired_cell + 1, t] * self.w_list[desired_cell + 1] + self.supply_b_list[desired_cell + 1]
+                    supply = (x[desired_cell + 1, t] - self.x_jam_list[desired_cell + 1]) * self.w_list[
+                        desired_cell + 1]
+                    adj_supply = supply / self.beta_list[desired_cell]
                 else:
                     supply = demand
+                    adj_supply = supply
                 supplys.append(supply * self.h)
+                adj_supplys.append(adj_supply * self.h)
 
                 flows.append(f[desired_cell, t] * self.h)
 
             fig, ax = plt.subplots()
             ax.plot(times, supplys, linestyle="dotted")
+            ax.plot(times, adj_supplys, linestyle="dotted")
             ax.plot(times, demands, linestyle="dashed")
             ax.plot(times, flows)
             plt.xlabel("Time Step")
             plt.ylabel("Value (# of cars)")
             plt.title("Cell {} Flow vs. Supply/Demand".format(desired_cell + 1))
-            ax.legend(['next cell supply', 'demand', 'outflow'])
+            ax.legend(['next cell supply', 'beta-adjusted next cell supply', 'demand', 'outflow'])
 
         # plot onramp control per time step
         fig, ax = plt.subplots()

@@ -86,8 +86,8 @@ class HCC(Controller):
                 next_supply = cell_demand
             else:
                 next_supply = self.w_list[c+1] * cell_state[c+1] + self.supply_b_list[c+1]
-
-            cell_outflow = min(cell_demand, next_supply) * self.h
+            # supply constraint must account for beta term as not all cars progress to next cell, this does not change the actual supply function
+            cell_outflow = min(cell_demand, next_supply/self.beta_list[c]) * self.h
 
             next_cell_state[c] = cell_state[c] + prev_inflow - cell_outflow
 
