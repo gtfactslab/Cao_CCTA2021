@@ -238,7 +238,10 @@ class GCDMPC(Controller):
                     # otherwise constrain by demand only
                     m.addConstr(demand[c, k] == x[c, k] * self.v_list[c])
                     # supply constraint must account for beta term as not all cars progress to next cell, this does not change the actual supply function
-                    m.addConstr(supply[c, k] == (x[c, k] * self.w_list[c] + self.supply_b_list[c])/self.beta_list[c])
+                    if c > 0:
+                        m.addConstr(supply[c, k] == (x[c, k] * self.w_list[c] + self.supply_b_list[c])/self.beta_list[c-1])
+                    else:
+                        m.addConstr(supply[c, k] == (x[c, k] * self.w_list[c] + self.supply_b_list[c]))
 
                     m.addConstr(unrestricted_flow[c, k] == demand[c, k])
                     if c < self.num_cells - 1:

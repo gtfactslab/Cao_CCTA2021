@@ -78,10 +78,10 @@ class MPC(Controller):
 
         self.A = sparse.csc_matrix(self.A)
 
-        # supply constraint must account for beta term as not all cars progress to next cell, this does not change the actual supply function
-        self.w_matrix = sparse.diags([w/b for w, b in zip(self.w_list[1:], self.beta_list[:-1])])
+        self.w_matrix = sparse.diags(self.w_list[1:])
+        self.beta_matrix = sparse.diags(self.beta_list[:-1])
         self.supply_b_list = np.array([[-1 * self.w_list[i] * self.x_jam_list[i]] for i in range(0, len(self.x_jam_list))])
-        self.supply_b_list[1:] = [s/b for s, b in zip(self.supply_b_list[1:], self.beta_list[:-1])]
+
         # demand constraint
         self.v_matrix = sparse.diags(self.v_list)
 
@@ -151,8 +151,9 @@ class MPC(Controller):
             constraints += [f[-self.num_onramps:, k] <= x[-self.num_onramps:, k]]  # must also be lower than current density of onramp
 
             # for cells
+            # supply constraint must account for beta term as not all cars progress to next cell, this does not change the actual supply function
             constraints += [f[:-self.num_onramps, k] <= x[:-self.num_onramps, k] @ self.v_matrix,
-                            f[:-(self.num_onramps + 1), k] <= x[1:-self.num_onramps, k] @ self.w_matrix + np.squeeze(self.supply_b_list[1:])]
+                            self.beta_matrix @ f[:-(self.num_onramps + 1), k] <= x[1:-self.num_onramps, k] @ self.w_matrix + np.squeeze(self.supply_b_list[1:])]
 
         # impose non-negative constraint on x and flow, as a check
         constraints += [x >= 0, f >= 0, u >= 0]
@@ -216,17 +217,22 @@ class MPC(Controller):
         ax.legend([str(c+1) for c in self.cells_with_onramps])
 
         # plot cell density per time step
-        fig, ax = plt.subplots()
-        cax = ax.matshow(np.flipud(x.value[:-self.num_onramps, :]), aspect="auto")
-        fig.colorbar(cax)
-        plt.xlabel("Time Step")
-        plt.ylabel("Cell")
-        plt.title("Cell Density")
+        all_densities = x.value
+        for cell in range(0, self.num_cells):
+            densities = []
+            times = []
+            x_ups = []
+            x_lows = []
+            for t in range(len(u.value[0])):
+                densities.append(all_densities[cell, t])
+                times.append(t)
 
-        cell_ticks = ['']
-        [cell_ticks.append(str(self.num_flows - i - self.num_onramps)) for i in range(0, self.num_cells)]
-        ax.set_yticklabels(cell_ticks)
-        ax.tick_params(axis='x', bottom=True, top=False, labelbottom=True, labeltop=False)
+            fig, ax = plt.subplots()
+            ax.scatter(times, densities)
+            plt.xlabel("Time Step")
+            plt.ylabel("Value (# of cars)")
+            plt.title("Cell {} Density Over Time".format(cell + 1))
+            ax.legend(['x_upper', 'x_lower', 'density'])
 
         fig, ax = plt.subplots()
         cax = ax.matshow(x.value[-self.num_onramps:, :], aspect="auto")
@@ -240,3 +246,4 @@ class MPC(Controller):
         ax.set_yticklabels(cell_ticks)
         ax.tick_params(axis='x', bottom=True, top=False, labelbottom=True, labeltop=False)
         plt.show()
+
