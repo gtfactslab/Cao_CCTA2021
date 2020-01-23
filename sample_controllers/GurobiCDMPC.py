@@ -9,7 +9,7 @@ from components.controller import Controller
 
 
 class GCDMPC(Controller):
-    def __init__(self, h, x_upper_list, x_lower_list, w_list, x_jam_list, v_list, beta_list, onramp_flow_list, input_array, modeling_horizon=11, time_limit=None):
+    def __init__(self, h, x_upper_list, x_lower_list, w_list, x_jam_list, v_list, beta_list, onramp_flow_list, input_array, modeling_horizon=11, time_limit=None, control_memory=1):
         # Init using params from simulation
         self.next_step_to_calculate = 0
         self.prev_checkpoint = 0
@@ -118,6 +118,8 @@ class GCDMPC(Controller):
         # sets time limit (seconds) for optimization, will return best solution so far if exceeded
         self.time_limit = time_limit
 
+        self.control_memory = control_memory
+
 
 
 
@@ -127,7 +129,7 @@ class GCDMPC(Controller):
 
         if timestep >= self.next_step_to_calculate:
             self.prev_checkpoint = self.next_step_to_calculate
-            self.next_step_to_calculate = self.next_step_to_calculate + int(self.N/3)
+            self.next_step_to_calculate = self.next_step_to_calculate + self.control_memory
 
             onramp_state = state[0:self.num_cells]
             onramp_state = [onramp_state[c] for c in self.cells_with_onramps]
