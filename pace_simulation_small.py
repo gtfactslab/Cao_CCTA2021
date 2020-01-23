@@ -20,8 +20,8 @@ n = 2
 h = 1/120
 
 # congestion density values per cell
-x_upper_list = [100, 100]
-x_lower_list = [60, 60]
+x_upper_list = [110, 110]
+x_lower_list = [70, 70]
 
 # supply/demand parameters per cell
 w_list = [-20, -20]
