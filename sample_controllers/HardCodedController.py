@@ -85,9 +85,9 @@ class HCC(Controller):
             if c == self.num_cells - 1 or congestion_state[c+1] == 0:
                 next_supply = cell_demand
             else:
-                next_supply = self.w_list[c+1] * cell_state[c+1] + self.supply_b_list[c+1]
-            # supply constraint must account for beta term as not all cars progress to next cell, this does not change the actual supply function
-            cell_outflow = min(cell_demand, next_supply/self.beta_list[c]) * self.h
+                next_supply = (self.w_list[c+1] * cell_state[c+1] + self.supply_b_list[c+1])/self.beta_list[c]
+
+            cell_outflow = min(cell_demand, next_supply) * self.h
 
             next_cell_state[c] = cell_state[c] + prev_inflow - cell_outflow
 
@@ -102,15 +102,16 @@ class HCC(Controller):
         next_cell_type = None
         for c in range(self.num_cells - 1, -1, -1):
             cell_types.insert(0, cell_type)
+
             if cell_type == 'A':
                 ideal_x = self.x_upper_list[c] - self.up_buffer
                 next_cell_type = 'B'
             elif cell_type == 'B':
-                ideal_x = (self.v_list[c + 1] / (self.beta_list[c] * self.v_list[c])) * ideal_densities[0]
+                ideal_x = (self.v_list[c + 1] / (self.beta_list[c] * self.v_list[c])) * ideal_densities[0] # Whatever is needed to sustain A at x_upper_A
                 if ideal_x >= self.x_upper_list[c]:
                     next_cell_type = 'C'
                 else:
-                    next_cell_type = 'B'
+                    next_cell_type = 'D'
             elif cell_type == 'C':
                 ideal_x = self.x_upper_list[c] - self.up_buffer
                 next_cell_type = 'D'
@@ -121,12 +122,12 @@ class HCC(Controller):
                 else:
                     next_cell_type = 'B'
 
-
             ideal_densities.insert(0, ideal_x)
 
             cell_type = next_cell_type
 
         print(ideal_densities)
+        print(cell_types)
 
         # 3) calculate goal densities based on congestion state
         goal_densities = ideal_densities
@@ -143,9 +144,9 @@ class HCC(Controller):
                     xj = self.x_jam_list[c]
                     v_prev = self.v_list[c-1]
 
-                    x_crossover = (-1 * w * xj) / (v_prev - w)
+                    x_crossover = (-1 * w * xj) / (v_prev * self.beta_list[c-1] - w)
                     print(x_crossover)
-                    if ideal_densities[c-1] >= x_crossover:
+                    if ideal_densities[c-1] > x_crossover:
                         # if the previous cell is affected, now we care and calculate new densities for all preceding cells
                         # these densities can be overwritten if there is another congested cell further up the chain
                         congested_cell = c
