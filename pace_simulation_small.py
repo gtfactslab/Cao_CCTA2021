@@ -14,31 +14,31 @@ time_step = 1
 
 # simulator parameters
 # number of cells
-n = 3
+n = 2
 
 # discretization factor
 h = 1/120
 
 # congestion density values per cell
-x_upper_list = [100, 100, 100]
-x_lower_list = [60, 60, 60]
+x_upper_list = [100, 100]
+x_lower_list = [60, 60]
 
 # supply/demand parameters per cell
-w_list = [-20, -20, -20]
-x_jam_list = [320, 320, 320]
-v_list = [60, 60, 44]  # equivalent to free flow speed @ certain density
+w_list = [-20, -20]
+x_jam_list = [320, 320]
+v_list = [60, 60]  # equivalent to free flow speed @ certain density
 
 # beta for each cell
-beta_list = [0.75, 0.75, 1]
+beta_list = [0.9, 1]
 
 # onramp parameters
 # max flow per onramp
 # if no onramp attached to cell, set flow to 0
-onramp_flow_list = [40, 40, 0]
+onramp_flow_list = [40, 40]
 #onramp_flow_list = [80, 40, 0] increase flow to ramp 1 to act as supply
 
 # start parameters (optional)
-start_list = [0, 150, 150] # start congested
+start_list = [0, 150] # start congested
 #start_list = [0, 0, 0] # start empty
 
 onramp_start_list = None # [1, 2, 3]
