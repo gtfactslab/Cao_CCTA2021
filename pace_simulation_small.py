@@ -34,7 +34,7 @@ beta_list = [0.9, 1]
 # onramp parameters
 # max flow per onramp
 # if no onramp attached to cell, set flow to 0
-onramp_flow_list = [40, 40]
+onramp_flow_list = [40, 0]
 #onramp_flow_list = [80, 40, 0] increase flow to ramp 1 to act as supply
 
 # start parameters (optional)
@@ -46,8 +46,7 @@ onramp_start_list = None # [1, 2, 3]
 # inputs
 # can either provide one row per cell (populate rows corresponding to cells with no onramp attached with zeros)
 # or can provide one row per attached onramp (experimental)
-expected_u = np.array([[80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80],
-                       [80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80]])
+expected_u = np.array([[80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80]])
 
 expected_u = np.hstack((expected_u, expected_u)) # extend time
 
