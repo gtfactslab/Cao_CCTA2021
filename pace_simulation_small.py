@@ -8,7 +8,6 @@ from sample_controllers.ModelPredictiveController import MPC
 from sample_controllers.HardCodedController import HCC
 from sample_controllers.GurobiCDMPC import GCDMPC
 
-# time parameters (not used in calculations)
 total_time = 3600
 time_step = 1
 
@@ -34,11 +33,11 @@ beta_list = [0.9, 1]
 # onramp parameters
 # max flow per onramp
 # if no onramp attached to cell, set flow to 0
-onramp_flow_list = [40, 0]
+onramp_flow_list = [60, 0]
 #onramp_flow_list = [80, 40, 0] increase flow to ramp 1 to act as supply
 
 # start parameters (optional)
-start_list = [0, 150] # start congested
+start_list = [150, 150] # start congested
 #start_list = [0, 0, 0] # start empty
 
 onramp_start_list = None # [1, 2, 3]
@@ -49,11 +48,6 @@ onramp_start_list = None # [1, 2, 3]
 expected_u = np.array([[80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80]])
 
 expected_u = np.hstack((expected_u, expected_u)) # extend time
-
-
-#small_u = np.array([[80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80],
-#                    [80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80]])
-#expected_u = small_u
 
 mpcontroller = MPC(h=h,
                    w_list=w_list,
