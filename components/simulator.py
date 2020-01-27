@@ -194,6 +194,8 @@ class Simulator():
             if controller is not None:
                 control_commands = controller.compute_next_command(t, self.state, debug)
                 control_commands = self.pad_and_match_inputs(control_commands)
+                if debug:
+                    print(control_commands)
             # first, cycle through each cell and calculate densities for next time step
 
             for c in self.cell_dict:
