@@ -36,7 +36,7 @@ class GCDMPC(Controller):
         self.congestion_buffer = 0.01 #buffer for calculating congestion
 
         self.x_upper_goal = [u-self.congestion_buffer for u in self.x_upper_list]
-        self.x_lower_goal = [l+self.congestion_buffer for l in self.x_lower_list]
+        self.x_lower_goal = [l for l in self.x_lower_list]
 
         # onramp max flows
         self.onramp_flow_list = onramp_flow_list
@@ -306,6 +306,7 @@ class GCDMPC(Controller):
             output = [u[o, 0].x for o in range(self.num_onramps)]
 
             self.stored_u = np.array([[u[o, k].x for o in range(self.num_onramps)] for k in range(self.N)]).transpose()
+            print(self.stored_u)
 
         else:
             output = [self.stored_u[o, timestep - self.prev_checkpoint] for o in range(self.num_onramps)]
