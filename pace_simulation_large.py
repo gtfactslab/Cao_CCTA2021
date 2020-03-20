@@ -80,7 +80,7 @@ gcdmpcontroller = GCDMPC(h=h,
                      input_array=expected_u,
                      modeling_horizon=11,
                      time_limit=3600,
-                     control_memory=10) # horizon 16 if starting empty, 41 + cutoff early for congested
+                     control_memory=1) # horizon 16 if starting empty, 41 + cutoff early for congested
 
 controllers = [("None", None),
                ("MPC", mpcontroller),
