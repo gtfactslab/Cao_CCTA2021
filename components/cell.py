@@ -46,7 +46,7 @@ class Cell(Road):
         self.attached_onramp = onramp_obj
 
     # other methods
-    def calculate_next_step(self, incoming_to_onramp, h, onramp_control=None):
+    def calculate_next_step(self, incoming_to_onramp, h, onramp_control=None, upstream_inflow=None):
 
         cur_density = self.get_current_density()
 
@@ -60,6 +60,9 @@ class Cell(Road):
 
         # discretization factor
         change_in_density = h * change_in_density
+
+        if upstream_inflow is not None:
+            change_in_density = change_in_density + upstream_inflow
 
         # calculate density of next step (TODO: this is where cars incoming from onramp are added as they are "forced")
         self.density_next_step = max(cur_density + change_in_density + new_from_onramp, 0) # ensures never goes below 0

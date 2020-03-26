@@ -26,7 +26,8 @@ class Simulator():
                  onramp_flow_list,
                  start_list=None,
                  onramp_start_list=None,
-                 input_array=None):
+                 input_array=None,
+                 upstream_inflow=None):
 
         # checks
         starts_provided = bool(start_list)
@@ -67,6 +68,9 @@ class Simulator():
             if input_array.shape[0] != self.num_onramps:
                 print("ERROR: input_matrix must have one row of values per cell OR one row of values per existing onramp")
                 error = True
+        if upstream_inflow is not None:
+            if len(upstream_inflow) != 1 and len(upstream_inflow) != input_array.shape[1]:
+                print("ERROR: upstream_inflow must either be a constant or list of values with the same length as the number of input timesteps")
 
         if error:
             return None
@@ -115,6 +119,13 @@ class Simulator():
         self.u = None
         if inputs_provided:
             self.u = self.pad_and_match_inputs(input_array)
+
+        #instantiate upstream inflow if provided
+        self.upstream_inflow = upstream_inflow
+        if self.upstream_inflow is not None:
+            if len(self.upstream_inflow) == 1:
+                self.upstream_inflow = [upstream_inflow for i in range(0, input_array.shape[1])]
+
 
         print("Simulator Object successfully instantiated.")
 
@@ -202,7 +213,8 @@ class Simulator():
                 onramp_in = self.u[c - 1][t]
                 self.cell_dict[c].calculate_next_step(onramp_in,
                                                       self.h,
-                                                      float(control_commands[c - 1]) if controller is not None else None)
+                                                      float(control_commands[c - 1]) if controller is not None else None,
+                                                      self.upstream_inflow[t] if c == 1 and self.upstream_inflow is not None else None)
                 cars_exited_network += self.cell_dict[c].cars_leaving_network(self.h)
 
             diff = cars_exited_network - prev_cars
