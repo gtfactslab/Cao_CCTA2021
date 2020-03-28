@@ -69,7 +69,7 @@ class Simulator():
                 print("ERROR: input_matrix must have one row of values per cell OR one row of values per existing onramp")
                 error = True
         if upstream_inflow is not None:
-            if len(upstream_inflow) != 1 and len(upstream_inflow) != input_array.shape[1]:
+            if not isinstance(upstream_inflow, (int, float)) and len(upstream_inflow) != input_array.shape[1]:
                 print("ERROR: upstream_inflow must either be a constant or list of values with the same length as the number of input timesteps")
 
         if error:
