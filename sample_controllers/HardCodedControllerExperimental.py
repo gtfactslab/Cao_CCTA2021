@@ -5,7 +5,7 @@ from scipy import sparse
 from components.controller import Controller
 
 class HCC(Controller):
-    def __init__(self, h, x_upper_list, x_lower_list, w_list, x_jam_list, v_list, beta_list, onramp_flow_list, input_array, upstream_inflow=0):
+    def __init__(self, h, x_upper_list, x_lower_list, w_list, x_jam_list, v_list, beta_list, onramp_flow_list, input_array):
         # Init using params from simulation
         error = False #TODO: Put in checks for inputs
 
@@ -71,8 +71,6 @@ class HCC(Controller):
 
         self.num_inputs_provided = self.input_array.shape[1]
 
-        self.upstream_inflow = upstream_inflow #can only accomodat constant for now, TODO: add compatibility for time-varying
-
     def compute_next_command(self, timestep, state, debug=False):
         onramp_state = state[0:self.num_cells]
         cell_state = state[self.num_cells:2*self.num_cells]
@@ -96,7 +94,6 @@ class HCC(Controller):
             prev_inflow = self.beta_list[c] * cell_outflow
 
         #print(next_cell_state)
-        next_cell_state[0] = next_cell_state[0] + self.upstream_inflow # add upstream inflow to cell 1
 
         # 2) calculate ideal goal densities
         ideal_densities = []
@@ -107,14 +104,27 @@ class HCC(Controller):
             cell_types.insert(0, cell_type)
 
             if cell_type == 'A':
-                ideal_x = self.x_upper_list[c] - self.up_buffer
+                if self.num_cells > 1:
+                    x_option_1 = self.x_upper_list[c] - self.up_buffer # x_upper
+                    x_cross = (-1 * self.w_list[c] * self.x_jam_list[c]) / (
+                            self.beta_list[c - 1] * self.v_list[c-1] - self.w_list[c])
+                    x_option_2 = self.beta_list[c-1] * self.v_list[c-1] * x_cross / self.v_list[c] # whatever is needed to sustain B at crossover
+                    print(x_option_1, x_cross, x_option_2)
+                    ideal_x = max(x_option_1, x_option_2)
+                else:
+                    ideal_x = self.x_upper_list[c] - self.up_buffer
                 next_cell_type = 'B'
             elif cell_type == 'B':
-                ideal_x = (self.v_list[c + 1] / (self.beta_list[c] * self.v_list[c])) * ideal_densities[0] # Whatever is needed to sustain A at x_upper_A
+                x_option_1 = (self.v_list[c + 1] / (self.beta_list[c] * self.v_list[c])) * ideal_densities[0] # Whatever is needed to sustain A at x_upper_A
+                x_cross = (-1 * self.w_list[c+1] * self.x_jam_list[c+1]) / (
+                        self.beta_list[c] * self.v_list[c] - self.w_list[c+1])
+                x_option_2 = x_cross
+                ideal_x = max(x_option_1, x_option_2)
+                print(x_option_1, x_cross, x_option_2)
                 if ideal_x >= self.x_upper_list[c]:
                     next_cell_type = 'C'
                 else:
-                    next_cell_type = 'D'
+                    next_cell_type = 'E'
             elif cell_type == 'C':
                 ideal_x = self.x_upper_list[c] - self.up_buffer
                 next_cell_type = 'D'
@@ -123,7 +133,14 @@ class HCC(Controller):
                 if ideal_x >= self.x_upper_list[c]:
                     next_cell_type = 'C'
                 else:
-                    next_cell_type = 'B'
+                    next_cell_type = 'E'
+            elif cell_type == 'E':
+                ideal_x = (self.v_list[c + 1] / (self.beta_list[c] * self.v_list[c])) * ideal_densities[0]
+                if ideal_x >= self.x_upper_list[c]:
+                    next_cell_type = 'C'
+                else:
+                    next_cell_type = 'E'
+
 
             ideal_densities.insert(0, ideal_x)
 

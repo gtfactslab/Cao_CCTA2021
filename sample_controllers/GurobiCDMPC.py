@@ -9,7 +9,7 @@ from components.controller import Controller
 
 
 class GCDMPC(Controller):
-    def __init__(self, h, x_upper_list, x_lower_list, w_list, x_jam_list, v_list, beta_list, onramp_flow_list, input_array, modeling_horizon=11, time_limit=None, control_memory=1):
+    def __init__(self, h, x_upper_list, x_lower_list, w_list, x_jam_list, v_list, beta_list, onramp_flow_list, input_array, modeling_horizon=11, time_limit=None, control_memory=1, upstream_inflow=0):
         # Init using params from simulation
         self.next_step_to_calculate = 0
         self.prev_checkpoint = 0
@@ -120,6 +120,9 @@ class GCDMPC(Controller):
 
         self.control_memory = control_memory
 
+        # for now we assume a single value, TODO: make compatible with a time-dependent list
+        self.upstream_inflow = upstream_inflow
+
 
 
 
@@ -213,7 +216,7 @@ class GCDMPC(Controller):
                     if c > 0:
                         prev_flow = self.beta_list[c-1] * f[c-1, k] * self.h
                     else:
-                        prev_flow = 0
+                        prev_flow = self.upstream_inflow # add upstream inflow to cell 1
 
                     m.addConstr(x[c, k+1] == x[c, k] - (self.h * f[c, k]) + onramp_flow + prev_flow)
 
