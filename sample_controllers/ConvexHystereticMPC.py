@@ -9,7 +9,7 @@ from components.controller import Controller
 
 
 class CHMPC(Controller):
-    def __init__(self, h, x_upper_list, x_lower_list, w_list, x_jam_list, v_list, beta_list, onramp_flow_list, input_array, modeling_horizon=11, upstream_inflow=0):
+    def __init__(self, h, x_upper_list, x_lower_list, w_list, x_jam_list, v_list, beta_list, onramp_flow_list, input_array, modeling_horizon=11):
         # Init using params from simulation
         error = False #TODO: Put in checks for inputs
 
@@ -110,9 +110,6 @@ class CHMPC(Controller):
 
         self.num_inputs_provided = self.input_array.shape[1]
 
-        # for now we assume a constant value, #TODO: add compatibility for time-dependent lists
-        self.upstream_inflow = upstream_inflow
-
 
 
     def compute_next_command(self, timestep, state, debug=False):
@@ -170,7 +167,6 @@ class CHMPC(Controller):
             # calculating density at each time step using values from previous timestep
             # calculate inputs at timestep
             B = np.zeros(self.num_flows)
-            B[0] = self.upstream_inflow # add upstream inflow to cell 1
             if timestep + k < self.num_inputs_provided:
                 B[-self.num_onramps:] = self.input_array[:, timestep + k]
 

@@ -9,7 +9,7 @@ from components.controller import Controller
 
 
 class MPC(Controller):
-    def __init__(self, h, w_list, x_jam_list, v_list, beta_list, onramp_flow_list, input_array, modeling_horizon=11):
+    def __init__(self, h, w_list, x_jam_list, v_list, beta_list, onramp_flow_list, input_array, modeling_horizon=11, upstream_inflow=0):
         # Init using params from simulation
         error = False #TODO: Put in checks
 
@@ -106,6 +106,8 @@ class MPC(Controller):
 
         self.num_inputs_provided = self.input_array.shape[1]
 
+        self.upstream_inflow = upstream_inflow # only accepts constants for now #TODO: add time-varying capability
+
 
 
     def compute_next_command(self, timestep, state, debug=False):
@@ -140,6 +142,7 @@ class MPC(Controller):
             # calculating density at each time step using values from previous timestep
             # calculate inputs at timestep
             B = np.zeros(self.num_flows)
+            B[0] = self.upstream_inflow # add inflow to cell 1
             if timestep + k < self.num_inputs_provided:
                 B[-self.num_onramps:] = self.input_array[:, timestep + k]
 
