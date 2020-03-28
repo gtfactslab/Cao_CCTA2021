@@ -123,7 +123,7 @@ class Simulator():
         #instantiate upstream inflow if provided
         self.upstream_inflow = upstream_inflow
         if self.upstream_inflow is not None:
-            if len(self.upstream_inflow) == 1:
+            if isinstance(upstream_inflow, (int, float)):
                 self.upstream_inflow = [upstream_inflow for i in range(0, input_array.shape[1])]
 
 
