@@ -8,6 +8,7 @@ Capacity drop is an empirically observed phenomenon in vehicular traffic flow on
 <h2>Notes on Repository</h2>
 The controller formulations outlined in the paper can be found in the `sample_controllers/` directory, though the names used for each controller during development are different from those used in the paper.
 For reference:
+
 * The Relaxed Approximate MPC (RAMPC) is implemented in `ModelPredictiveController.py`
 * The Exact Hysteretic MPC (EHMPC) is implemented in `GurobiCDMPC.py`
 * The Heuristic Controller (HC) is implemented in `HardCodedController.py`
