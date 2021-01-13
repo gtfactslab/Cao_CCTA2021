@@ -83,9 +83,9 @@ gcdmpcontroller = GCDMPC(h=h,
                      control_memory=1) # horizon 16 if starting empty, 41 + cutoff early for congested
 
 controllers = [("None", None),
-               ("MPC", mpcontroller),
-               ("HCC", hcc),
-               ("GCDMPC",gcdmpcontroller)
+               ("RAMPC", mpcontroller),
+               ("HC", hcc),
+               ("EHMPC",gcdmpcontroller)
                ]
 
 times = [t for t in range(0, len(expected_u[0]))]
