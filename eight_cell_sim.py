@@ -1,6 +1,6 @@
 # public libraries
 import numpy as np
-import os, sys
+import matplotlib.pyplot as plt
 
 # our libraries
 from components.simulator import Simulator
@@ -92,8 +92,6 @@ times = [t for t in range(0, len(expected_u[0]))]
 
 cars_exiting = []
 controllers_run = []
-results_dir = sys.argv[1]
-os.makedirs("results/{}".format(results_dir))
 for (name, c) in controllers:
     controllers_run.append(name)
     sim_obj = Simulator(total_time=total_time,
@@ -110,9 +108,17 @@ for (name, c) in controllers:
                         start_list=start_list,
                         onramp_start_list=onramp_start_list,
                         input_array=expected_u)
-    sim_obj.run(controller=c, plot_results=False, debug=False, output_csv="results/{}/{}_results.csv".format(results_dir, name))
+    sim_obj.run(controller=c, plot_results=False, debug=False)
     cars_exiting.append(sim_obj.get_cars_exited_per_timestep())
+
+fig, ax = plt.subplots()
+plt.xlabel("Time Step")
+plt.ylabel("Number of Cars Exited")
+plt.title("Number of Cars Exiting Network Per Timestep")
+[ax.plot(times, c) for c in cars_exiting]
+ax.legend(controllers_run)
 
 print("SUMMARY")
 [print("{}:\t{}".format(controllers_run[i], sum(cars_exiting[i]))) for i in range(len(controllers_run))]
 
+plt.show()
